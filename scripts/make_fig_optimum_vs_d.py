@@ -1,8 +1,7 @@
 """Optimum-cell scaling across d: per-method best-SW configuration vs d
 with simple log-linear fits and extrapolation to d=6.
 
-For each (d ∈ {2, 3, 4, 5}, method ∈ {dense, tci_als, aci, tci_tdvp1,
-tci_tdvp2}) we pick the cell with the lowest SW (mean over seeds). We
+For each (d ∈ {2, 3, 4, 5}, method ∈ {dense, tci_tdvp1, tci_tdvp2}) we pick the cell with the lowest SW (mean over seeds). We
 then plot, against d:
   - SW achieved at that cell
   - MPS / Dense memory ratio (Dense = 1)
@@ -38,8 +37,6 @@ from _hp_utils import (
 # the search-grid max).
 METHOD_LINESTYLE = {
     "dense":      "-",
-    "tci_als":    (0, (3, 1, 1, 1)),    # dash-dot-dot
-    "aci":        (0, (5, 2)),          # dashed
     "tci_tdvp1":  (0, (1, 1)),          # dotted
     "tci_tdvp2":  (0, (4, 1, 1, 1, 1, 1)),  # long-dash-dot-dot
 }
@@ -193,7 +190,7 @@ def main():
 
     HP_KEYS = {"N", "K", "D"}
     TDVP_METHODS = {"tci_tdvp1", "tci_tdvp2"}
-    MPS_METHODS = TDVP_METHODS | {"tci_als", "aci"}
+    MPS_METHODS = TDVP_METHODS
     # N panel: all MPS methods + Dense + JAM (each has a meaningful grid res).
     # K panel: all MPS methods + Dense (JAM's K is a sampling discretization,
     # not directly comparable to wave-method Trotter K).
@@ -222,12 +219,12 @@ def main():
                        for k, v in _json.loads(exact_floor_path.read_text()).items()}
 
     # Per-panel method roster for the HP-row grouped bars. Order mirrors the
-    # legend (JAM, Dense, ALS, ACI, TDVP1, TDVP2) so reading the bars
+    # legend (JAM, Dense, TDVP1, TDVP2) so reading the bars
     # left-to-right within a group matches reading the legend top-to-bottom.
     HP_PANEL_METHODS = {
-        "N": ["jam", "dense", "tci_als", "aci", "tci_tdvp1", "tci_tdvp2"],
-        "K": ["dense", "tci_als", "aci", "tci_tdvp1", "tci_tdvp2"],
-        "D": ["tci_als", "aci", "tci_tdvp1", "tci_tdvp2"],
+        "N": ["jam", "dense", "tci_tdvp1", "tci_tdvp2"],
+        "K": ["dense", "tci_tdvp1", "tci_tdvp2"],
+        "D": ["tci_tdvp1", "tci_tdvp2"],
     }
 
     for ax, (key, label, yscale, fit_fn) in zip(axes, panels):

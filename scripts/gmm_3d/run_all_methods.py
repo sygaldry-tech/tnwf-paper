@@ -1,4 +1,4 @@
-"""Run all 7 V-step methods on gmm_3d × (N, K) sweep × seeds."""
+"""Run all V-step methods on gmm_3d × (N, K) sweep × seeds."""
 from __future__ import annotations
 
 import argparse
@@ -8,7 +8,7 @@ from tnwf.leaderboard import update_after_batch_subprocess as update_after_batch
 from tnwf.pipelines.run_evolution import run
 
 METHODS = [
-    "jam", "dense", "tci_als", "aci",
+    "jam", "dense",
     "tci_tdvp1", "tci_tdvp2",
 ]
 

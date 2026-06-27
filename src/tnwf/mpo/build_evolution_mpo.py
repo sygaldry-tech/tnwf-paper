@@ -1,21 +1,13 @@
-"""Shared TCI / ACI MPO construction for V-step methods.
+"""V-step MPO construction via TT-cross.
 
-Two flavours of MPO build:
-
-1. **exp(iβV) MPO** — direct exponential, used by TCI+ALS and ACI methods.
-   Oracle returns complex-valued exp(iβ V(x)).
-
-2. **V-only MPO** — bare V_t(x) as TT cores, used by TDVP1/TDVP2 (which
-   exponentiate locally via expm_multiply on small effective Hamiltonian
-   blocks). Oracle returns real-valued V(x).
-
-Pivot strategy controlled by ``method``:
-  - 'tci': SVD/MAXVOL pivots (default tt_cross)
-  - 'aci': prrLU pivot rows (numerically stable when D >> D_eff)
+**V-only MPO** — bare V_t(x) as TT cores, used by TDVP1/TDVP2 (which
+exponentiate locally via expm_multiply on small effective Hamiltonian
+blocks). Oracle returns real-valued V(x). Pivots are selected by the
+SVD/MAXVOL strategy of :func:`tnwf.mps.tt_cross.tt_cross`.
 """
 from __future__ import annotations
 
-from typing import Callable, Literal
+from typing import Callable
 
 import numpy as np
 
@@ -90,63 +82,6 @@ def _cached_oracle_eval(
     return out
 
 
-def build_exp_iβV_mpo(
-    V_fn: Callable,
-    beta: float,
-    t: float,
-    N: int,
-    d: int,
-    L: float,
-    D_max: int,
-    n_sweeps: int = 2,
-    method: Literal["tci", "aci"] = "tci",
-    seed: int = 0,
-    init_right_idx: list[np.ndarray] | None = None,
-    return_right_idx: bool = False,
-    oracle_cache: dict | None = None,
-    n_global: int = 0,
-    global_pool: int = 0,
-) -> list[np.ndarray]:
-    """Build exp(iβ V_t) MPO (complex). Used by TCI+ALS and ACI V-steps.
-
-    ``n_global`` > 0 runs global-pivot refinement rounds of the TT-cross
-    (addPivotsAllBonds analog) after the local sweeps — re-seeds the cross at
-    the worst-residual grid configs so a local sweep that missed mixture modes
-    recovers them. Default 0 leaves the original local-only cross unchanged.
-
-    If ``init_right_idx`` is given, it seeds the TT-cross MAXVOL search; this
-    is the warm-start path used between consecutive Trotter steps (audit 1.1).
-    Set ``return_right_idx`` to also receive the final right-index set so the
-    caller can feed it back on the next step.
-
-    If ``oracle_cache`` is a dict, ``V_fn(x, t)`` rows are memoized in it,
-    keyed by ``(t, tuple(grid_indices))``. The cache survives across
-    invocations for as long as the caller holds the dict alive — typically
-    threaded through ``warm_state["V_cache"]`` (audit 4.1) to reuse evaluations
-    across Trotter steps that share the same t bin (e.g. the 4 sub-steps
-    of a single product-formula K-step share t exactly).
-    """
-    grid_1d = _make_grid_1d(N, L)
-
-    if oracle_cache is None:
-        def oracle(points: np.ndarray) -> np.ndarray:
-            x = grid_1d[points]                       # (M, d)
-            V = _chunked_oracle_eval(V_fn, x, t)
-            return np.exp(1j * beta * V)
-    else:
-        def oracle(points: np.ndarray) -> np.ndarray:
-            V = _cached_oracle_eval(V_fn, points, grid_1d, t, oracle_cache)
-            return np.exp(1j * beta * V)
-
-    return tt_cross(
-        oracle, N=N, d=d, D_max=D_max, n_sweeps=n_sweeps, seed=seed,
-        pivot_method=method,
-        init_right_idx=init_right_idx,
-        return_right_idx=return_right_idx,
-        n_global=n_global, global_pool=global_pool,
-    )
-
-
 def build_V_mpo(
     V_fn: Callable,
     t: float,
@@ -155,7 +90,6 @@ def build_V_mpo(
     L: float,
     D_max: int,
     n_sweeps: int = 2,
-    method: Literal["tci", "aci"] = "tci",
     seed: int = 0,
     init_right_idx: list[np.ndarray] | None = None,
     return_right_idx: bool = False,
@@ -163,8 +97,8 @@ def build_V_mpo(
 ) -> list[np.ndarray]:
     """Build bare V_t(x) MPO (real → complex). Used by TDVP V-steps.
 
-    If ``init_right_idx`` is given, seeds TT-cross MAXVOL search (audit 1.2).
-    If ``oracle_cache`` is given, V_fn rows are memoized (audit 4.1).
+    If ``init_right_idx`` is given, seeds the TT-cross MAXVOL search.
+    If ``oracle_cache`` is given, V_fn rows are memoized.
     """
     grid_1d = _make_grid_1d(N, L)
 
@@ -178,7 +112,6 @@ def build_V_mpo(
 
     result = tt_cross(
         oracle, N=N, d=d, D_max=D_max, n_sweeps=n_sweeps, seed=seed,
-        pivot_method=method,
         init_right_idx=init_right_idx,
         return_right_idx=return_right_idx,
     )

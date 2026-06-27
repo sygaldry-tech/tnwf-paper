@@ -29,16 +29,16 @@ def test_rebuild_aggregates_per_method(tmp_path):
     for s in range(3):
         _make_npz(root / "swiss_roll_2d" / "dense" / f"seed{s}.npz",
                   dataset="swiss_roll_2d", method="dense", seed=s, sw=0.10 + 0.01 * s)
-        _make_npz(root / "swiss_roll_2d" / "aci" / f"seed{s}.npz",
-                  dataset="swiss_roll_2d", method="aci", seed=s, sw=0.20 + 0.01 * s)
+        _make_npz(root / "swiss_roll_2d" / "tci_tdvp1" / f"seed{s}.npz",
+                  dataset="swiss_roll_2d", method="tci_tdvp1", seed=s, sw=0.20 + 0.01 * s)
 
     rows = rebuild(root)
     assert len(rows) == 2
     by_method = {r.method: r for r in rows}
     assert abs(by_method["dense"].sw_mean - 0.11) < 1e-6
-    assert abs(by_method["aci"].sw_mean - 0.21) < 1e-6
+    assert abs(by_method["tci_tdvp1"].sw_mean - 0.21) < 1e-6
     assert by_method["dense"].n_seeds == 3
-    assert by_method["aci"].n_seeds == 3
+    assert by_method["tci_tdvp1"].n_seeds == 3
 
 
 @pytest.mark.needle

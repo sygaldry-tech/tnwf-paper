@@ -206,12 +206,8 @@ def _sig_marker(p: float) -> str:
 _METHOD_LABELS = {
     "jam":        "JAM",
     "dense":      "Dense",
-    "tci_als":    "TCI+ALS",
-    "aci":        "ACI",
     "tci_tdvp1":  "TCI+TDVP1",
     "tci_tdvp2":  "TCI+TDVP2",
-    "aci_tdvp1":  "ACI+TDVP1",
-    "aci_tdvp2":  "ACI+TDVP2",
 }
 
 # Datasets shown in this order; anything else falls through alphabetically.

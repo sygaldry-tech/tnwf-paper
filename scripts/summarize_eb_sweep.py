@@ -49,7 +49,7 @@ def main():
     for N, K, suffix, method, sws, walls in rows:
         cells.setdefault((N, K, suffix), []).append((method, sws, walls))
 
-    method_order = ["jam", "dense", "tci_als", "aci", "tci_tdvp1", "tci_tdvp2"]
+    method_order = ["jam", "dense", "tci_tdvp1", "tci_tdvp2"]
 
     def _key(meth):
         return method_order.index(meth) if meth in method_order else 99

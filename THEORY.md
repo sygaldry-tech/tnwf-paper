@@ -154,7 +154,7 @@ The current numerical error is a mixture of:
 - MPS truncation $O(\sigma_{D+1})$ where $\sigma$ are Schmidt singular values
 
 Using analytic $V_t$ removes the first two terms entirely, isolating
-the **method-intrinsic error** of TCI+ALS / ACI / TDVP1 / TDVP2.
+the **method-intrinsic error** of TDVP1 / TDVP2.
 
 ## Suggested API change
 

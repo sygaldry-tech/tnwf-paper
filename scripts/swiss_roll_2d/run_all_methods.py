@@ -1,4 +1,4 @@
-"""Run all 7 V-step methods × N seeds on swiss_roll_2d.
+"""Run all V-step methods × N seeds on swiss_roll_2d.
 
 Assumes per-seed JAM checkpoints already exist at
 data/swiss_roll_2d/jam/seed{S}.pt (run scripts/swiss_roll_2d/train_jam.py first).
@@ -12,7 +12,7 @@ from tnwf.leaderboard import update_after_batch_subprocess as update_after_batch
 from tnwf.pipelines.run_evolution import run
 
 METHODS = [
-    "jam", "dense", "tci_als", "aci",
+    "jam", "dense",
     "tci_tdvp1", "tci_tdvp2",
 ]
 

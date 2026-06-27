@@ -20,22 +20,17 @@ from matplotlib.gridspec import GridSpec
 import numpy as np
 
 METHODS = [
-    "jam", "dense", "tci_als", "aci",
-    "tci_tdvp1", "tci_tdvp2",
+    "jam", "dense",     "tci_tdvp1", "tci_tdvp2",
 ]
 METHOD_LABEL = {
     "jam":        "JAM",
     "dense":      "Dense",
-    "tci_als":    "TCI+ALS",
-    "aci":        "ACI",
     "tci_tdvp1":  "TCI+TDVP1",
     "tci_tdvp2":  "TCI+TDVP2",
 }
 METHOD_COLORS = {
     "jam":        "tab:gray",
     "dense":      "black",
-    "tci_als":    "tab:blue",
-    "aci":        "tab:orange",
     "tci_tdvp1":  "tab:green",
     "tci_tdvp2":  "tab:red",
 }

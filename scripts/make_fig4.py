@@ -7,10 +7,7 @@
   (C) Best-cell accuracy (SW)  vs d  (linear y).  Markers only; dashed
       line at the ~0.1 good-reconstruction rule of thumb.
 
-Filtered to {Dense, TDVP1, TDVP2}; the build-then-apply direct-compression
-baselines TCI+ALS and ACI (which don't extend cleanly past d=5) are shown
-in the supplementary per-method table and Pareto figure
-(scripts/make_fig_supp_pareto.py).
+Filtered to {Dense, TDVP1, TDVP2}.
 
 Usage:
     uv run python scripts/make_fig4.py \\

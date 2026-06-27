@@ -1,7 +1,7 @@
-"""Visualise all 5 quantum V-step methods under the Path-3 Trotter-loss V_t.
+"""Visualise the quantum V-step methods under the Path-3 Trotter-loss V_t.
 
 Panels (left → right, top → bottom):
-  Dense, TCI+ALS, ACI, TCI+TDVP-1, TCI+TDVP-2.
+  Dense, TCI+TDVP-1, TCI+TDVP-2.
 
 Each panel scatters wavefunction-pipeline samples drawn from |ψ_{t_k}|²
 at each of the K+1 reference times, coloured by snapshot time (viridis).
@@ -28,8 +28,6 @@ from tnwf.pipelines.run_evolution import run
 
 METHODS = [
     ("dense",      "Dense (exact)",           {}),
-    ("tci_als",    "TCI + ALS",               {"D_V": 16, "D_out": 16}),
-    ("aci",        "ACI",                     {"D_V": 16, "D_max": 16}),
     ("tci_tdvp1",  "TCI + TDVP-1",            {"D_V": 16}),
     ("tci_tdvp2",  "TCI + TDVP-2",            {"D_V": 16, "D_max": 16, "D_out": 16}),
 ]
@@ -104,11 +102,12 @@ def main():
         panels.append((label, snaps, float(w2_mean)))
         print(f"  W₂@t=1 = {w2_mean:.3f}")
 
-    # Figure: 2x3 grid, last cell is legend
-    fig = plt.figure(figsize=(15.0, 10.0))
-    gs = fig.add_gridspec(2, 3, wspace=0.06, hspace=0.18)
-    axes = [fig.add_subplot(gs[i // 3, i % 3]) for i in range(5)]
-    ax_legend = fig.add_subplot(gs[1, 2]); ax_legend.axis("off")
+    # Figure: 2x2 grid, last cell is legend
+    n_methods = len(panels)
+    fig = plt.figure(figsize=(10.0, 10.0))
+    gs = fig.add_gridspec(2, 2, wspace=0.06, hspace=0.18)
+    axes = [fig.add_subplot(gs[i // 2, i % 2]) for i in range(n_methods)]
+    ax_legend = fig.add_subplot(gs[1, 1]); ax_legend.axis("off")
 
     for ax, (label, snaps, w2) in zip(axes, panels):
         _panel(ax, snaps, bg, label, K, axis_box, w2)
@@ -139,7 +138,7 @@ def main():
                    va="top", family="monospace")
 
     fig.suptitle(
-        "Petals — 5 quantum V-step methods, Trotter-loss V$_t$, N=16 K=4 "
+        "Petals — quantum V-step methods, Trotter-loss V$_t$, N=16 K=4 "
         "(seed 0, 200 samples / snapshot)",
         fontsize=12.5, y=0.995)
 

@@ -12,7 +12,7 @@ from tnwf.leaderboard import update_after_batch
 from tnwf.pipelines.run_evolution import run
 
 METHODS = [
-    "dense", "tci_als", "aci",
+    "dense",
     "tci_tdvp1", "tci_tdvp2",
 ]
 

@@ -26,7 +26,7 @@ image = (
 app = modal.App(APP_NAME, image=image)
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
-METHODS = ["tci_als", "aci", "tci_tdvp1", "tci_tdvp2"]
+METHODS = ["tci_tdvp1", "tci_tdvp2"]
 N_VALUES = [8, 16, 32, 64, 128, 256]
 SEEDS = list(range(10))
 

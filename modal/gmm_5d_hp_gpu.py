@@ -40,7 +40,7 @@ def run_one_gpu(method: str, N: int, K: int, D_max: int, seed: int,
 
     Resourced-cross knobs (D_V/D_out/n_v_substeps/n_global) default to
     coupled/off → original behaviour. exp(iβV) cross is memory-bounded by
-    env-ALS, so high D_V is safe even at d=5.
+    the environment-compression step, so high D_V is safe even at d=5.
     """
     from tnwf.pipelines.run_evolution import run
     from tnwf.modal_resourced import resourced_kwargs

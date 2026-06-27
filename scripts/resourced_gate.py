@@ -4,13 +4,8 @@ Each cell is wrapped in try/except so an OOM/SIGKILL on one heavy cell doesn't
 lose the others' results. Writes every cell line to stdout (flushed) AND appends
 to an results file. Run with `python -u`.
 
-Note: tnwf's vstep_tci_als materializes the full Hadamard product exp_V⊙ψ at bond
-D_V·χ(ψ) before ALS-compressing, so peak memory ~ (D_V·χ)²·N. At d≥4 where χ→D_out,
-D_V=D_out=128 → bond 16384 → ~137 GB → OOM. Keep D_V·D_out modest until the product
-build is made streaming/cap-aware.
-
 Usage:
-  python -u scripts/resourced_gate.py --d 4 --dataset gmm_4d --method tci_als \
+  python -u scripts/resourced_gate.py --d 4 --dataset gmm_4d --method tci_tdvp1 \
       --out results/resourced_gate_d4.txt --seeds 0 \
       --cells "N32,K8,DV16,DO16,M1,g0;N32,K8,DV64,DO64,M1,g0;..."
 """
@@ -39,7 +34,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--d", type=int, required=True)
     ap.add_argument("--dataset", required=True)
-    ap.add_argument("--method", default="tci_als")
+    ap.add_argument("--method", default="tci_tdvp1")
     ap.add_argument("--seeds", type=int, nargs="+", default=[0])
     ap.add_argument("--nsc", type=int, default=2, help="n_sweeps_cross")
     ap.add_argument("--out", required=True)

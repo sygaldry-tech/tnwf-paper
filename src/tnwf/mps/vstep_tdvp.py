@@ -4,11 +4,7 @@ TDVP doesn't form exp(iβV) ⊙ ψ at all — it projects on the MPS tangent spa
 and exponentiates locally per site via expm_multiply on small effective
 Hamiltonian blocks. The MPO carries V_t (not exp(iβV)).
 
-The MPO is built via tt_cross (SVD/MAXVOL pivots — "TCI"). An earlier ACI
-variant (prrLU pivots) was dropped because it was numerically indistinguishable
-from TCI at the (d, N, D) ranges used here, while keeping the misleading "ACI"
-tag — ACI elsewhere refers to the Hadamard-product algorithm, which TDVP
-doesn't use.
+The MPO is built via tt_cross (SVD/MAXVOL pivots).
 """
 from __future__ import annotations
 
@@ -36,7 +32,7 @@ def apply_V_step_mps_tci_tdvp1(
     input_norm = mps_norm(mps)
     V_mpo = build_V_mpo(
         V_fn, t=t_k, N=N, d=d, L=L,
-        D_max=D_V, n_sweeps=n_sweeps_cross, method="tci",
+        D_max=D_V, n_sweeps=n_sweeps_cross,
     )
     mps_c = [c.astype(np.complex128) for c in mps]
     if device == "cpu":
@@ -65,7 +61,7 @@ def apply_V_step_mps_tci_tdvp2(
     input_norm = mps_norm(mps)
     V_mpo = build_V_mpo(
         V_fn, t=t_k, N=N, d=d, L=L,
-        D_max=D_V, n_sweeps=n_sweeps_cross, method="tci",
+        D_max=D_V, n_sweeps=n_sweeps_cross,
     )
     mps_c = [c.astype(np.complex128) for c in mps]
     if device == "cpu":

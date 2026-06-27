@@ -1,7 +1,7 @@
 """Modal: gmm_4d HP sweep.
 
 Sobol grid: N ∈ [8, 32], K ∈ [4, 64], D ∈ [8, 64], 48 points × 2 seeds.
-Five wavefunction methods (Dense, TCI+ALS, ACI, TCI+TDVP1, TCI+TDVP2) use
+Wavefunction methods (Dense, TCI+TDVP1, TCI+TDVP2) use
 analytic V_t — no JAM ckpt required. JAM rows are launched separately by
 modal/gmm_4d_hp_jam.py once /jam_checkpoints/gmm_4d/ is populated.
 

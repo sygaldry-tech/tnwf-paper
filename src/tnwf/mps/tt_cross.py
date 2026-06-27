@@ -5,20 +5,16 @@ O(n_sweeps · d · D_max² · N) function evaluations rather than N^d. Numpy-onl
 port of the research prototype's wavefunction/tt_cross_approx.py with the TDVP-canonical
 backward-sweep pivot update (SciPost Phys. 18, 104).
 
-pivot_method:
-  'tci' — SVD-based greedy pivoted-QR row selection (default).
-  'aci' — prrLU pivot rows directly from the fiber matrix (numerically stable
-          when D >> D_eff).
+Pivot rows are selected by SVD-based greedy pivoted-QR row selection.
 """
 from __future__ import annotations
 
 import math
-from typing import Callable, Literal
+from typing import Callable
 
 import numpy as np
 
 from tnwf.mps.core import truncate_mps
-from tnwf.mps.ldu_cross import prrlu
 
 
 def _maxvol_pivot_rows(F: np.ndarray, D_max: int) -> np.ndarray:
@@ -100,14 +96,6 @@ def _update_right_indices(
     return right_idx
 
 
-def _prrlu_pivot_rows(F: np.ndarray, D_max: int) -> np.ndarray:
-    """Select up to D_max informative rows of F via prrLU (transpose to use cols)."""
-    rows, _ = prrlu(F, max_rank=D_max, tol=0.0)
-    if not rows:
-        return np.arange(min(F.shape[0], D_max), dtype=np.int32)
-    return np.array(rows, dtype=np.int32)
-
-
 def _tt_eval(cores: list[np.ndarray], idx: np.ndarray) -> np.ndarray:
     """Reconstruct TT amplitudes at a batch of multi-indices (M, d) → (M,)."""
     acc = np.ones((idx.shape[0], 1), dtype=cores[0].dtype)
@@ -116,7 +104,7 @@ def _tt_eval(cores: list[np.ndarray], idx: np.ndarray) -> np.ndarray:
     return acc[:, 0]
 
 
-def _forward_sweep(fn, right_idx, N, d, D_max, tol, out_dtype, pivot_method):
+def _forward_sweep(fn, right_idx, N, d, D_max, tol, out_dtype):
     """One left-to-right TT-cross pass given right index sets → (cores, left_idx).
 
     Extracted verbatim from the tt_cross main loop so the main sweeps and the
@@ -148,10 +136,7 @@ def _forward_sweep(fn, right_idx, N, d, D_max, tol, out_dtype, pivot_method):
         else:
             D_keep = 1
 
-        if pivot_method == "aci":
-            pivot_rows = _prrlu_pivot_rows(F, D_keep)
-        else:
-            pivot_rows = _maxvol_pivot_rows(U[:, :D_keep], D_keep)
+        pivot_rows = _maxvol_pivot_rows(U[:, :D_keep], D_keep)
         D_keep = len(pivot_rows)
 
         if j < d - 1:
@@ -215,7 +200,6 @@ def tt_cross(
     tol: float = 1e-6,
     seed: int = 0,
     init_right_idx: list[np.ndarray] | None = None,
-    pivot_method: Literal["tci", "aci"] = "tci",
     return_right_idx: bool = False,
     n_global: int = 0,
     global_pool: int = 0,
@@ -260,7 +244,7 @@ def tt_cross(
 
     for sweep in range(n_sweeps):
         cores, left_idx = _forward_sweep(
-            fn, right_idx, N, d, D_max, tol, out_dtype, pivot_method)
+            fn, right_idx, N, d, D_max, tol, out_dtype)
         if sweep < n_sweeps - 1:
             right_idx = _update_right_indices(fn, left_idx, right_idx, N, d, D_max, out_dtype)
 
@@ -276,7 +260,7 @@ def tt_cross(
         if n_added == 0:
             break
         cores, left_idx = _forward_sweep(
-            fn, right_idx, N, d, D_max, tol, out_dtype, pivot_method)
+            fn, right_idx, N, d, D_max, tol, out_dtype)
 
     if return_right_idx:
         return cores, right_idx

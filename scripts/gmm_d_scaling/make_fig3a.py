@@ -14,13 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 METHODS = [
-    "dense", "tci_als", "aci",
-    "tci_tdvp1", "tci_tdvp2",
+    "dense",     "tci_tdvp1", "tci_tdvp2",
 ]
 METHOD_COLORS = {
     "dense":      "black",
-    "tci_als":    "tab:blue",
-    "aci":        "tab:orange",
     "tci_tdvp1":  "tab:green",
     "tci_tdvp2":  "tab:red",
 }

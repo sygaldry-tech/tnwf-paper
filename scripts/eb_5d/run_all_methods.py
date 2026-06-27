@@ -8,7 +8,7 @@ from tnwf.leaderboard import update_after_batch_subprocess as update_after_batch
 from tnwf.pipelines.run_evolution import run
 
 METHODS = [
-    "jam", "tci_als", "aci",
+    "jam",
     "tci_tdvp1", "tci_tdvp2",
 ]
 

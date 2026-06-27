@@ -7,7 +7,7 @@ where accuracy plateaus.
   - Higher K: tighter product-formula error O(Δt²). Should saturate once
     that's below grid/MPS error.
 
-Grid: 6 methods × 4 N × 5 K × 5 seeds = 600 containers (under 1000 cap).
+Grid: 4 methods × 4 N × 5 K × 5 seeds = 400 containers (under 1000 cap).
 D_max = min(N, 32) so MPS retains full-bond expressivity at small N and
 compresses at large N.
 
@@ -38,7 +38,7 @@ app = modal.App(APP_NAME, image=image)
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 METHODS = [
-    "jam", "dense", "tci_als", "aci",
+    "jam", "dense",
     "tci_tdvp1", "tci_tdvp2",
 ]
 N_VALUES = [16, 32, 64, 128]

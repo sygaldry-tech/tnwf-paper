@@ -1,4 +1,4 @@
-"""End-to-end pipeline cross-check: all 6 non-Dense methods within tol of Dense."""
+"""End-to-end pipeline cross-check: non-Dense methods within tol of Dense."""
 from __future__ import annotations
 
 import os
@@ -60,7 +60,7 @@ def test_jam_runs(jam_ckpt, tmp_path):
 
 
 @pytest.mark.medium
-@pytest.mark.parametrize("method", ["tci_als", "aci", "tci_tdvp1", "tci_tdvp2"])
+@pytest.mark.parametrize("method", ["tci_tdvp1", "tci_tdvp2"])
 def test_mps_method_runs(jam_ckpt, method, tmp_path):
     method_kwargs = {"D_max": 16, "D_V": 8, "D_out": 16}
     out = run(
@@ -78,7 +78,7 @@ def test_mps_method_runs(jam_ckpt, method, tmp_path):
 
 @pytest.mark.medium
 @pytest.mark.parametrize("method",
-                         ["jam", "dense", "tci_als", "aci", "tci_tdvp1", "tci_tdvp2"])
+                         ["jam", "dense", "tci_tdvp1", "tci_tdvp2"])
 def test_petals_trajectory_runs(jam_ckpt_petals, method, tmp_path):
     """Trajectory path: sw[k] is compared against bio snapshot k, length K+1."""
     method_kwargs = ({} if method == "dense"

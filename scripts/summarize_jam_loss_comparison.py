@@ -30,8 +30,8 @@ def main():
     variants = [("cfm", ""), ("am", "_am"), ("cfm_ot", "_cfm_ot")]
 
     for dataset, methods in (
-        ("petals_2d", ["jam", "dense", "tci_als", "aci", "tci_tdvp1", "tci_tdvp2"]),
-        ("eb_5d", ["jam", "tci_als", "aci", "tci_tdvp1", "tci_tdvp2"]),
+        ("petals_2d", ["jam", "dense", "tci_tdvp1", "tci_tdvp2"]),
+        ("eb_5d", ["jam", "tci_tdvp1", "tci_tdvp2"]),
     ):
         print()
         print("=" * 100)

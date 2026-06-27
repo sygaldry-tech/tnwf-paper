@@ -1,4 +1,4 @@
-"""Petals — per-snapshot SW for the six V-step methods sharing one JAM.
+"""Petals — per-snapshot SW for the V-step methods sharing one JAM.
 
 Mirrors the visual idiom of AM-paper Fig 2's method axis: SW + MMD vs
 time with one line per V-step method, all using the same trained JAM
@@ -22,8 +22,6 @@ from tnwf.metrics import wasserstein_2_subsampled
 METHOD_STYLE = {
     "jam":       dict(label="JAM grad-flow",  color="#7f7f7f", marker="s"),
     "dense":     dict(label="Dense",          color="#1f77b4", marker="D"),
-    "tci_als":   dict(label="TCI + ALS",      color="#2ca02c", marker="^"),
-    "aci":       dict(label="ACI",            color="#d62728", marker="v"),
     "tci_tdvp1": dict(label="TCI + TDVP-1",   color="#9467bd", marker="o"),
     "tci_tdvp2": dict(label="TCI + TDVP-2",   color="#ff7f0e", marker="x"),
 }

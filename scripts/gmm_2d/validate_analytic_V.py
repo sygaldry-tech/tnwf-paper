@@ -6,7 +6,7 @@ isolates JAM-specific error.
 
 Design:
     cells          = [(N=16, K=8), (N=32, K=16)]
-    methods        = dense, tci_als, aci, tci_tdvp1, tci_tdvp2  (skip jam)
+    methods        = dense, tci_tdvp1, tci_tdvp2  (skip jam)
     seeds          = 0..4
     V_sources      = jam, analytic
     total          = 5 methods × 2 cells × 5 seeds × 2 sources = 100 runs
@@ -27,7 +27,7 @@ from scipy import stats
 from tnwf.pipelines.run_evolution import run
 
 CELLS = [(16, 8), (32, 16)]
-METHODS = ["dense", "tci_als", "aci", "tci_tdvp1", "tci_tdvp2"]
+METHODS = ["dense", "tci_tdvp1", "tci_tdvp2"]
 SEEDS = list(range(5))
 CKPT_DIR = Path("data/gmm_2d/jam")
 OUT_CSV = Path("results/gmm_2d/analytic_V_validation.csv")

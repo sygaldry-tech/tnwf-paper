@@ -2,7 +2,7 @@
 
 run(method, dataset, seed, N, d, K, β-schedule, jam_ckpt) → snapshots .npz
 
-For each method in {dense, tci_als, aci, tci_tdvp1, tci_tdvp2, jam}
+For each method in {dense, tci_tdvp1, tci_tdvp2, jam}
 this:
   1. Loads the JAM checkpoint to obtain V_fn(x, t).
   2. Initialises ψ_0 = √(N(0, I)) on the centred grid (positive real, ‖ψ_0‖=1).
@@ -14,7 +14,6 @@ this:
 from __future__ import annotations
 
 import math
-import os
 from pathlib import Path
 from typing import Callable, Literal
 
@@ -39,8 +38,6 @@ from tnwf.mps.core import (
     right_canonicalize,
     sample_mps_indices,
 )
-from tnwf.mps.vstep_aci import apply_V_step_mps_aci
-from tnwf.mps.vstep_tci_als import apply_V_step_mps_tci_als
 from tnwf.mps.vstep_tdvp import (
     apply_V_step_mps_tci_tdvp1,
     apply_V_step_mps_tci_tdvp2,
@@ -49,8 +46,6 @@ from tnwf.mps.vstep_tdvp import (
 Method = Literal[
     "jam",          # classical baseline: dx/dt = ∇V_t(x), Euler integration
     "dense",
-    "tci_als",
-    "aci",
     "tci_tdvp1",
     "tci_tdvp2",
 ]
@@ -224,77 +219,9 @@ def _make_v_step(method: Method, **method_kw):
     """Return a callable v_step(state, V_fn, beta, t_k, N, d, L) → new state.
 
     For 'dense': state is (N^d,) ψ array. For all MPS methods: state is mps list.
-
-    Warm-start across Trotter steps is opt-in via env flags (see
-    ``experiments/warm_start_benchmark.py``):
-
-      TNWF_WARMSTART_PIVOTS=1     TT-cross right_idx reuse (audit 1.1, 1.2)
-      TNWF_WARMSTART_ALS_INIT=1   ALS init from ψ_{k-1} (audit 2.1)
-      TNWF_WARMSTART_ORACLE=1     V-grid V_fn cache across V-steps (audit 4.1)
     """
-    pivot_warmstart = os.environ.get("TNWF_WARMSTART_PIVOTS", "0") == "1"
-    als_init_warmstart = os.environ.get("TNWF_WARMSTART_ALS_INIT", "0") == "1"
-    oracle_warmstart = os.environ.get("TNWF_WARMSTART_ORACLE", "0") == "1"
-    any_warmstart = pivot_warmstart or als_init_warmstart or oracle_warmstart
-
     if method == "dense":
         return _v_step_dense
-    if method == "tci_als":
-        D_V = method_kw.get("D_V", 16)
-        D_out = method_kw.get("D_out", method_kw.get("D_max", 16))
-        n_sw = method_kw.get("n_sweeps", 2)
-        n_sw_cross = method_kw.get("n_sweeps_cross", 2)
-        # Warm-state container survives across closure invocations. None ⇒ cold.
-        # Pre-populated only with the keys the active flags actually opt into;
-        # vstep_tci_als reads .get(...) so absent keys are equivalent to cold.
-        warm_state: dict | None
-        if any_warmstart:
-            warm_state = {}
-            # Sentinel keys so vstep_tci_als knows which warm-starts are armed.
-            # vstep_tci_als reads via .get(key); a missing key means "this piece
-            # is OFF". Initialise None so the FIRST step still falls through to
-            # the cold-start path; subsequent steps see the populated value.
-            if pivot_warmstart:
-                warm_state["right_idx_exp"] = None
-            if als_init_warmstart:
-                warm_state["psi_prev"] = None
-            if oracle_warmstart:
-                warm_state["V_cache"] = {}
-        else:
-            warm_state = None
-
-        def f(state, V_fn, beta, t_k, N, d, L):
-            return apply_V_step_mps_tci_als(
-                state, V_fn=V_fn, beta=beta, t_k=t_k, N=N, d=d, L=L,
-                D_V=D_V, D_out=D_out, n_sweeps=n_sw, n_sweeps_cross=n_sw_cross,
-                warm_state=warm_state,
-            )
-        return f
-    if method == "aci":
-        D_V = method_kw.get("D_V", 16)
-        D_max = method_kw.get("D_max", 16)
-        n_sw = method_kw.get("n_sweeps", 4)
-        n_sw_cross = method_kw.get("n_sweeps_cross", 2)
-        tol = method_kw.get("tol", 1e-6)
-        # ACI honors PIVOTS (1.1) and ORACLE (4.1); ALS_INIT (2.1) doesn't
-        # apply since there's no ALS sweep to init.
-        aci_warm_state: dict | None
-        if pivot_warmstart or oracle_warmstart:
-            aci_warm_state = {}
-            if pivot_warmstart:
-                aci_warm_state["right_idx_exp"] = None
-            if oracle_warmstart:
-                aci_warm_state["V_cache"] = {}
-        else:
-            aci_warm_state = None
-
-        def f(state, V_fn, beta, t_k, N, d, L):
-            return apply_V_step_mps_aci(
-                state, V_fn=V_fn, beta=beta, t_k=t_k, N=N, d=d, L=L,
-                D_max=D_max, D_V=D_V, n_sweeps=n_sw, n_sweeps_cross=n_sw_cross, tol=tol,
-                warm_state=aci_warm_state,
-            )
-        return f
     if method == "tci_tdvp1":
         D_V = method_kw.get("D_V", 16)
         n_sw = method_kw.get("n_sweeps", 1)
@@ -561,7 +488,7 @@ def run(
     """Run a complete V-step pipeline and (optionally) save .npz snapshots.
 
     Args:
-        method:    one of jam / dense / tci_als / aci / tci_tdvp1 / tci_tdvp2.
+        method:    one of jam / dense / tci_tdvp1 / tci_tdvp2.
         dataset:   "swiss_roll_2d" / "gmm_2d" / "gmm_3d".
         jam_ckpt:  path to a trained JAM checkpoint. Required if V_source="jam"
                    or method="jam".

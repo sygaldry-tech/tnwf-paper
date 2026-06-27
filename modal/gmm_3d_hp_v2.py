@@ -1,9 +1,8 @@
 """Modal: gmm_3d HP sweep v2 — optimised for cost.
 
 Changes from v1:
-  - 3 methods only (Dense, TCI+TDVP1, TCI+TDVP2) — drop JAM/ACI/TCI+ALS
-    (JAM is N-invariant and tested separately; ACI/TCI+ALS fail at d=3
-    high-N anyway and aren't informative).
+  - 3 methods only (Dense, TCI+TDVP1, TCI+TDVP2); JAM is N-invariant and
+    tested separately.
   - Analytic V_t (no JAM oracle) — eliminates training noise + 2× faster oracle.
   - Tighter axes: N ∈ [16, 64], K ∈ [4, 32], D ∈ [8, 64] (drop the expensive
     high ends; we already see saturation in the 2D sweep).

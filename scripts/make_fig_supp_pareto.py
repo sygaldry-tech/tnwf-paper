@@ -39,8 +39,7 @@ DATASETS = {
 }
 D_VALUES = [3, 4, 5]
 
-# Build-then-apply direct-compression baselines (ALS/ACI) removed from the paper.
-PARETO_METHODS = [m for m in WAVE_METHODS if m not in ("tci_als", "aci")]
+PARETO_METHODS = list(WAVE_METHODS)
 
 
 def pareto_min_min(xs: np.ndarray, ys: np.ndarray) -> tuple:

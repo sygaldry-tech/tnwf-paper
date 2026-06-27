@@ -18,12 +18,8 @@ evolution with tensor-network methods, evolving a wavefunction MPS under
 ### V-step methods
 
 1. **Dense** — exact `O(N^d)` reference
-2. **TCI+ALS** — TT-cross initialization + variational ALS sweeps
-3. **ACI** — adaptive cross interpolation (Hadamard), `O(χ³)`
-4. **TCI+TDVP1** — TT-cross MPO + 1-site TDVP V-step
-5. **TCI+TDVP2** — TT-cross MPO + 2-site TDVP V-step
-6. **ACI+TDVP1** — ACI-built MPO + 1-site TDVP
-7. **ACI+TDVP2** — ACI-built MPO + 2-site TDVP
+2. **TCI+TDVP1** — TT-cross MPO + 1-site TDVP V-step
+3. **TCI+TDVP2** — TT-cross MPO + 2-site TDVP V-step
 
 Background notes: [`THEORY.md`](THEORY.md).
 
@@ -75,7 +71,6 @@ tnWF/
 ├── tests/                # pytest suite mirroring src/tnwf/
 ├── scripts/{dataset}/    # per-dataset runners + figure generators
 ├── modal/                # distributed d/N scaling sweeps (optional, needs Modal)
-├── experiments/          # warm-start ablation harness
 ├── pyproject.toml        # package + dependency declarations
 ├── uv.lock               # fully pinned dependency lock
 └── licenses/             # third-party dependency license manifest

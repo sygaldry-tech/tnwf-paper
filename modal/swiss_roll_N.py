@@ -4,7 +4,7 @@ Question: do wavefunction methods catch up to (or beat) JAM as cell size L/N
 shrinks? At N=16 JAM clearly wins (SW=0.092 vs 0.165 for wavefunction at full
 bond), but the wavefunction methods are bottlenecked by grid quantisation.
 
-Grid: 8 methods × 5 N × 5 seeds = 200 containers (well under the 1000 cap).
+Grid: 4 methods × 5 N × 5 seeds = 100 containers (well under the 1000 cap).
 
 Each container trains its own JAM checkpoint inline (~30 s) and runs the
 8-step product formula at the given N. Output → Modal volume tnwf-results.
@@ -37,7 +37,7 @@ app = modal.App(APP_NAME, image=image)
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 METHODS = [
-    "jam", "dense", "tci_als", "aci",
+    "jam", "dense",
     "tci_tdvp1", "tci_tdvp2",
 ]
 N_VALUES = [16, 32, 64, 128, 256]

@@ -28,7 +28,7 @@ def test_make_fig1_runs(tmp_path):
 
     # Run dense + 2 mps methods at tiny config
     results_dir = tmp_path / "results" / "swiss_roll_2d"
-    for method in ("dense", "tci_als", "aci"):
+    for method in ("dense", "tci_tdvp1", "tci_tdvp2"):
         run(
             method=method, dataset="swiss_roll_2d", jam_ckpt=str(ckpt),
             seed=0, N=4, K=2, n_samples=200, save=True,

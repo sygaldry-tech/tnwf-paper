@@ -25,8 +25,7 @@ from _hp_utils import (
 )
 
 
-# Methods in display order (matches Fig 4 legend). Build-then-apply
-# direct-compression baselines (tci_als, aci) removed from the paper.
+# Methods in display order (matches Fig 4 legend).
 METHOD_ORDER = ["dense", "tci_tdvp1", "tci_tdvp2"]
 
 
