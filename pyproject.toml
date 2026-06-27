@@ -1,0 +1,42 @@
+[project]
+name = "tnwf"
+version = "0.1.0"
+description = "Scalable simulation of wavefunction flows via tensor networks (npj QI reproduction)"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "matplotlib>=3.8",
+    "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+modal = ["modal>=0.64"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short -m \"not heavy_duty\""
+markers = [
+    "needle: quick experiment (<30s)",
+    "medium: pipeline experiment (30s-5min)",
+    "heavy_duty: full sweep (>5min, Modal)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# uv
+.venv/
+# NOTE: uv.lock IS tracked in this release (reproducible deps + license review).
+
+# Generated outputs (regenerate with the scripts under scripts/ and modal/)
+results/
+data/
+figures/
+inputs/
+logs/
+
+# Local example/figure artifacts
+*.png
+*.pdf
+*.npz
+*.pt
+*.pkl
+*.amat
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.code-workspace
