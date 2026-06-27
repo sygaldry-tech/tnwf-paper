@@ -143,13 +143,6 @@ def sample_target_distribution(
     elif dataset.startswith("gmm_") and dataset.endswith("d") and dataset[4:-1].isdigit():
         x = sample_gaussian_mixture(n, d=d, std=std, scale=scale,
                                     arrangement="orthogonal", seed=seed)
-    elif dataset.startswith("mnist_coarse_"):
-        from tnwf.data.mnist import sample_mnist_coarse
-        from tnwf.jam.train import DATASET_DEFAULTS as _DEFAULTS
-        grid_n = _DEFAULTS[dataset]["grid_n"]
-        ordering = _DEFAULTS[dataset].get("ordering", "row")
-        x = sample_mnist_coarse(n, grid_n=grid_n, L=L, seed=seed,
-                                 ordering=ordering)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
     # Shift to [0, L) frame
@@ -164,10 +157,11 @@ def sample_target_trajectory_world(
     L: float,
     **kw,
 ) -> np.ndarray:
-    """Draw (K_data+1, n_per_step, d) trajectory in world frame [0, L)^d."""
-    from tnwf.jam.train import sample_target_trajectory
-    traj = sample_target_trajectory(dataset, n_per_step, d=d, seed=seed, **kw)
-    return traj.astype(np.float64) + L / 2.0
+    """Trajectory datasets are not part of this minimal release (endpoint only)."""
+    raise ValueError(
+        f"{dataset!r}: trajectory datasets are not included in this release; "
+        "only endpoint datasets (swiss_roll_2d, gmm_*d) are supported."
+    )
 
 
 def sample_from_psi_grid(

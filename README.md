@@ -41,27 +41,30 @@ uv run pytest -m medium              # < 5min, full pipeline
 # Train a JAM potential and run the methods on a 2D dataset
 uv run python -m tnwf.jam.train --dataset swiss_roll_2d --seed 0
 uv run python scripts/swiss_roll_2d/run_all_methods.py --seeds 0,1,2
-uv run python scripts/swiss_roll_2d/make_fig1.py
+uv run python scripts/make_fig2_dense_evolution.py   # writes figures/fig2_dense.pdf
 ```
 
-Datasets are generated on the fly (`swiss_roll_2d`, `gmm_2d`, `gmm_3d`,
-`gmm_d_scaling`, `gmm_N_scaling`, `petals_2d`, `eb_5d`); MNIST is downloaded
-automatically by `torchvision` on first use.
+Datasets are generated on the fly: `swiss_roll_2d` and `gmm_2d … gmm_16d`.
 
-## Reproducing figures
+## Reproducing the paper figures
 
-Per-dataset runners live under `scripts/{dataset}/`; cross-dataset figure
-generators are the top-level `scripts/make_fig*.py`. Each writes to a relative
-`figures/` path by default (override with `--out`). Example:
+This repository reproduces the manuscript's Swiss-roll / Gaussian-mixture
+results. Each generator writes to a relative `figures/` path by default
+(override with `--out`):
 
-```bash
-uv run python scripts/make_fig4.py            # cost-scaling figure
-uv run python scripts/make_fig3_tsne_grid.py
-```
+| Paper float | Script |
+|---|---|
+| Fig 1 (overview)        | `scripts/make_fig1_combined.py` |
+| Fig 2 (dense evolution) | `scripts/make_fig2_dense_evolution.py` |
+| Fig 3 (t-SNE grid)      | `scripts/make_fig3_tsne_grid.py` |
+| Fig 4 (cost scaling)    | `scripts/make_fig4.py` |
+| Fig S1 (supp. Pareto)   | `scripts/make_fig_supp_pareto.py` |
+| fig_gmm_ode             | `scripts/make_fig_gmm_ode.py` |
+| Table 3 (Pareto configs)| `scripts/make_table3_pareto_configs.py` |
 
-> **Note:** `scripts/make_fig5*.py` (coarse-MNIST / BAS panels) consume image
-> inputs produced by a separate experiment pipeline; point the `inputs/…` paths
-> in those scripts at your own generated outputs.
+The data the figure scripts read (`data/gmm_*_hp/…`) is produced by the
+per-dataset runners (`scripts/{swiss_roll_2d,gmm_2d,gmm_3d}/{train_jam,run_all_methods}.py`)
+and the GMM/scaling sweeps under `modal/`.
 
 ## Layout
 

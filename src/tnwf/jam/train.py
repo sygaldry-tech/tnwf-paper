@@ -16,9 +16,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from tnwf.data.embryoid_body import sample_eb_trajectory
 from tnwf.data.gaussian_mixture import sample_gaussian_mixture
-from tnwf.data.petals import sample_petals_trajectory
 from tnwf.data.swiss_roll import sample_swiss_roll
 from tnwf.jam.scalar_potential import (
     ScalarPotentialMLP,
@@ -50,73 +48,6 @@ DATASET_DEFAULTS: dict[str, dict] = {
                        "kind": "endpoint", "trajectory_K": None},
     "gmm_16d":       {"d": 16, "L": 8.0, "n_samples": 10_000, "std": 0.5, "scale": 3.0,
                        "kind": "endpoint", "trajectory_K": None},
-    # ── Coarse-grained continuous MNIST ───────────────────────────────────
-    # grid_n × grid_n mean-pooled MNIST in centred frame (envelope ±L/4).
-    # See tnwf.data.mnist.sample_mnist_coarse.
-    "mnist_coarse_2": {"d": 4,  "L": 8.0, "n_samples": 10_000, "grid_n": 2,
-                       "kind": "endpoint", "trajectory_K": None,
-                       "training": {"hidden": 128, "n_layers": 3,
-                                    "n_iter": 20_000, "batch_size": 256,
-                                    "loss_name": "cfm"}},
-    "mnist_coarse_4": {"d": 16, "L": 8.0, "n_samples": 10_000, "grid_n": 4,
-                       "kind": "endpoint", "trajectory_K": None,
-                       "training": {"hidden": 128, "n_layers": 3,
-                                    "n_iter": 20_000, "batch_size": 256,
-                                    "loss_name": "cfm"}},
-    "mnist_coarse_8": {"d": 64, "L": 8.0, "n_samples": 10_000, "grid_n": 8,
-                       "ordering": "row",
-                       "kind": "endpoint", "trajectory_K": None,
-                       "training": {"hidden": 128, "n_layers": 3,
-                                    "n_iter": 30_000, "batch_size": 256,
-                                    "loss_name": "cfm"}},
-    "mnist_coarse_8_hilbert": {
-                       "d": 64, "L": 8.0, "n_samples": 10_000, "grid_n": 8,
-                       "ordering": "hilbert",
-                       "kind": "endpoint", "trajectory_K": None,
-                       "training": {"hidden": 128, "n_layers": 3,
-                                    "n_iter": 30_000, "batch_size": 256,
-                                    "loss_name": "cfm"}},
-    "mnist_coarse_8_snake": {
-                       "d": 64, "L": 8.0, "n_samples": 10_000, "grid_n": 8,
-                       "ordering": "snake",
-                       "kind": "endpoint", "trajectory_K": None,
-                       "training": {"hidden": 128, "n_layers": 3,
-                                    "n_iter": 30_000, "batch_size": 256,
-                                    "loss_name": "cfm"}},
-    # ── Trajectory datasets ───────────────────────────────────────────────
-    # n_samples here = per-snapshot sample count. The on-device tensor is
-    # (trajectory_K+1, n_samples, d). L is chosen to comfortably wrap the
-    # petals' ±1.05 footprint in the [-L/2, L/2) centred frame.
-    "petals_2d":     {"d": 2, "L": 4.0, "n_samples": 2_000,
-                       "petal_width": 0.25, "scale_factor": 30.0,
-                       "kind": "trajectory", "trajectory_K": 4,
-                       # Paper-matched config (Neklyudov 2022, App E.1):
-                       # MLP 5 layers × 256 hidden, plus the CFM+OT 50k-iter
-                       # ablation winner from our internal sweep.
-                       "training": {"hidden": 256, "n_layers": 5,
-                                    "n_iter": 50_000, "batch_size": 256,
-                                    "loss_name": "cfm", "ot_coupling": True}},
-    # Same petals dataset at higher temporal resolutions — AM-paper Fig 2
-    # tests robustness to dataset granulation, comparing 5, 10, 15 timepoints.
-    "petals_2d_K9":  {"d": 2, "L": 4.0, "n_samples": 2_000,
-                       "petal_width": 0.25, "scale_factor": 30.0,
-                       "kind": "trajectory", "trajectory_K": 9,
-                       "training": {"hidden": 256, "n_layers": 5,
-                                    "n_iter": 50_000, "batch_size": 256,
-                                    "loss_name": "cfm", "ot_coupling": True}},
-    "petals_2d_K14": {"d": 2, "L": 4.0, "n_samples": 2_000,
-                       "petal_width": 0.25, "scale_factor": 30.0,
-                       "kind": "trajectory", "trajectory_K": 14,
-                       "training": {"hidden": 256, "n_layers": 5,
-                                    "n_iter": 50_000, "batch_size": 256,
-                                    "loss_name": "cfm", "ot_coupling": True}},
-    # Embryoid body PCA-5 trajectory: pre-staged by scripts/eb_5d/fetch_raw.py.
-    # L=10 comfortably wraps the per-dim unit-stddev PCA scores (≈ ±5σ).
-    "eb_5d":         {"d": 5, "L": 10.0, "n_samples": 2_000,
-                       "kind": "trajectory", "trajectory_K": 4,
-                       "training": {"hidden": 256, "n_layers": 5,
-                                    "n_iter": 50_000, "batch_size": 256,
-                                    "loss_name": "cfm", "ot_coupling": True}},
 }
 
 
@@ -129,43 +60,7 @@ def sample_target(name: str, n: int, *, d: int, seed: int, **kw) -> np.ndarray:
             n, d=d, std=kw.get("std", 0.5), scale=kw.get("scale", 3.0),
             arrangement="orthogonal", seed=seed,
         )
-    if name.startswith("mnist_coarse_"):
-        from tnwf.data.mnist import sample_mnist_coarse
-        grid_n = kw.get("grid_n", DATASET_DEFAULTS[name]["grid_n"])
-        L = kw.get("L", DATASET_DEFAULTS[name]["L"])
-        ordering = kw.get("ordering", DATASET_DEFAULTS[name].get("ordering", "row"))
-        return sample_mnist_coarse(n, grid_n=grid_n, L=L, seed=seed,
-                                    ordering=ordering)
     raise ValueError(f"Unknown dataset: {name}")
-
-
-def sample_target_trajectory(
-    name: str, n_per_step: int, *, d: int, seed: int, **kw
-) -> np.ndarray:
-    """Draw a ``(K_data+1, n_per_step, d)`` snapshot trajectory.
-
-    Centred frame; the pipeline shifts to ``[0, L)^d`` at use time.
-    """
-    if name.startswith("petals_2d"):
-        # Default 5 timepoints (= trajectory_K=4); _K9 / _K14 variants give
-        # 10 and 15 timepoints respectively for the AM-Fig-2 robustness test.
-        n_timepoints = {
-            "petals_2d":      5,
-            "petals_2d_K9":  10,
-            "petals_2d_K14": 15,
-        }.get(name)
-        if n_timepoints is None:
-            raise ValueError(f"Unknown petals variant: {name}")
-        return sample_petals_trajectory(
-            n_per_step,
-            n_timepoints=n_timepoints,
-            petal_width=kw.get("petal_width", 0.25),
-            scale_factor=kw.get("scale_factor", 30.0),
-            seed=seed,
-        )
-    if name == "eb_5d":
-        return sample_eb_trajectory(n_per_step, seed=seed)
-    raise ValueError(f"Unknown trajectory dataset: {name}")
 
 
 def train(
