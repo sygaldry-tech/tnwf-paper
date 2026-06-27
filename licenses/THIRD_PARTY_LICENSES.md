@@ -1,0 +1,129 @@
+# Third-Party Dependency Licenses
+
+> **Auto-generated, best-effort.** Parsed from `uv.lock` and enriched from the
+> PyPI JSON API. License strings are taken from each package's PyPI metadata
+> (`license_expression`, then `License ::` classifiers, then the free-text
+> `license` field) and are **not** a legal determination. Intended as a starting
+> point for formal review (e.g. with ORT, py-license-auditor, or equivalent).
+> Verify any `UNKNOWN` or non-permissive entries against the upstream project.
+
+Total packages: **85**
+
+## License summary
+
+| License (as reported) | Count |
+|---|---|
+| MIT | 14 |
+| MIT License | 11 |
+| BSD License | 10 |
+| Other/Proprietary License | 9 |
+| BSD-3-Clause | 8 |
+| Apache-2.0 | 6 |
+| UNKNOWN (no metadata) | 6 |
+| Apache Software License | 4 |
+| Python Software Foundation License | 2 |
+| 3-Clause BSD License | 1 |
+| Apache License 2.0 | 1 |
+| Apache Software License; BSD License | 1 |
+| Apache-2.0 AND MIT | 1 |
+| Apache-2.0 OR BSD-2-Clause | 1 |
+| BSD | 1 |
+| BSD-2-Clause | 1 |
+| BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | 1 |
+| ISC License (ISCL) | 1 |
+| LicenseRef-NVIDIA-SOFTWARE-LICENSE | 1 |
+| MIT-CMU | 1 |
+| Mozilla Public License 2.0 (MPL 2.0) | 1 |
+| NVIDIA Proprietary Software | 1 |
+| PSF-2.0 | 1 |
+| UNKNOWN (lookup failed) | 1 |
+
+## Per-package
+
+| Package | Version | License (as reported) |
+|---|---|---|
+| aiohappyeyeballs | 2.6.1 | Python Software Foundation License |
+| aiohttp | 3.13.5 | Apache-2.0 AND MIT |
+| aiosignal | 1.4.0 | Apache Software License |
+| annotated-doc | 0.0.4 | MIT |
+| anyio | 4.13.0 | MIT |
+| attrs | 26.1.0 | MIT |
+| cbor2 | 6.0.1 | MIT |
+| certifi | 2026.4.22 | Mozilla Public License 2.0 (MPL 2.0) |
+| click | 8.3.3 | BSD-3-Clause |
+| colorama | 0.4.6 | BSD License |
+| contourpy | 1.3.3 | BSD License |
+| coverage | 7.14.0 | Apache-2.0 |
+| cuda-bindings | 13.2.0 | LicenseRef-NVIDIA-SOFTWARE-LICENSE |
+| cuda-pathfinder | 1.5.4 | Apache-2.0 |
+| cuda-toolkit | 13.0.2 | UNKNOWN (no metadata) |
+| cycler | 0.12.1 | BSD License |
+| filelock | 3.29.0 | MIT |
+| fonttools | 4.62.1 | MIT |
+| frozenlist | 1.8.0 | Apache-2.0 |
+| fsspec | 2026.4.0 | BSD-3-Clause |
+| grpclib | 0.4.9 | BSD License |
+| h2 | 4.3.0 | MIT License |
+| hpack | 4.1.0 | MIT License |
+| hyperframe | 6.1.0 | MIT License |
+| idna | 3.14 | BSD-3-Clause |
+| iniconfig | 2.3.0 | MIT |
+| jinja2 | 3.1.6 | BSD License |
+| joblib | 1.5.3 | BSD-3-Clause |
+| kiwisolver | 1.5.0 | BSD License |
+| markdown-it-py | 4.2.0 | MIT License |
+| markupsafe | 3.0.3 | BSD-3-Clause |
+| matplotlib | 3.10.9 | Python Software Foundation License |
+| mdurl | 0.1.2 | MIT License |
+| modal | 1.4.2 | Apache-2.0 |
+| mpmath | 1.3.0 | BSD License |
+| multidict | 6.7.1 | Apache License 2.0 |
+| networkx | 3.6.1 | BSD-3-Clause |
+| numpy | 2.4.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
+| nvidia-cublas | 13.1.0.3 | UNKNOWN (no metadata) |
+| nvidia-cuda-cupti | 13.0.85 | Other/Proprietary License |
+| nvidia-cuda-nvrtc | 13.0.88 | Other/Proprietary License |
+| nvidia-cuda-runtime | 13.0.96 | UNKNOWN (no metadata) |
+| nvidia-cudnn-cu13 | 9.19.0.56 | UNKNOWN (no metadata) |
+| nvidia-cufft | 12.0.0.61 | Other/Proprietary License |
+| nvidia-cufile | 1.15.1.6 | Other/Proprietary License |
+| nvidia-curand | 10.4.0.35 | Other/Proprietary License |
+| nvidia-cusolver | 12.0.4.66 | Other/Proprietary License |
+| nvidia-cusparse | 12.6.3.3 | Other/Proprietary License |
+| nvidia-cusparselt-cu13 | 0.8.0 | NVIDIA Proprietary Software |
+| nvidia-nccl-cu13 | 2.28.9 | UNKNOWN (no metadata) |
+| nvidia-nvjitlink | 13.0.88 | Other/Proprietary License |
+| nvidia-nvshmem-cu13 | 3.4.5 | UNKNOWN (no metadata) |
+| nvidia-nvtx | 13.0.85 | Other/Proprietary License |
+| packaging | 26.2 | Apache-2.0 OR BSD-2-Clause |
+| pillow | 12.2.0 | MIT-CMU |
+| pluggy | 1.6.0 | MIT License |
+| propcache | 0.5.2 | Apache Software License |
+| protobuf | 6.33.6 | 3-Clause BSD License |
+| pygments | 2.20.0 | BSD-2-Clause |
+| pyparsing | 3.3.2 | MIT |
+| pytest | 9.0.3 | MIT |
+| pytest-cov | 7.1.0 | MIT |
+| python-dateutil | 2.9.0.post0 | Apache Software License; BSD License |
+| rich | 15.0.0 | MIT License |
+| ruff | 0.15.12 | MIT |
+| scikit-learn | 1.8.0 | BSD-3-Clause |
+| scipy | 1.17.1 | BSD License |
+| setuptools | 81.0.0 | MIT |
+| shellingham | 1.5.4 | ISC License (ISCL) |
+| six | 1.17.0 | MIT License |
+| sympy | 1.14.0 | BSD License |
+| synchronicity | 0.12.2 | Apache Software License |
+| threadpoolctl | 3.6.0 | BSD License |
+| tnwf | 0.1.0 | UNKNOWN (lookup failed) |
+| toml | 0.10.2 | MIT License |
+| tomli | 2.4.1 | MIT |
+| torch | 2.11.0 | BSD-3-Clause |
+| torchvision | 0.26.0 | BSD |
+| triton | 3.6.0 | MIT License |
+| typer | 0.25.1 | MIT |
+| types-certifi | 2021.10.8.3 | Apache Software License |
+| types-toml | 0.10.8.20260508 | Apache-2.0 |
+| typing-extensions | 4.15.0 | PSF-2.0 |
+| watchfiles | 1.1.1 | MIT License |
+| yarl | 1.23.0 | Apache-2.0 |
