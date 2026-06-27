@@ -1,0 +1,150 @@
+"""Figure 3 of the paper: t-SNE overlays for d ∈ {3, 5, 7}.
+
+3 columns × 3 rows grid. Each column is one d. Rows: Exact / JAM / TCI+TDVP1.
+Each panel fits its own t-SNE on (target ∪ method_samples) so cluster
+structure is comparable WITHIN a panel; cross-panel coords are NOT comparable.
+
+The "Exact" row uses an independent target draw (visual sample-size floor).
+
+Usage:
+    uv run python scripts/make_fig3_tsne_grid.py \\
+        --out figures/fig3_tsne.pdf
+"""
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Colourblind-safe palette adapted from Wong (Nature Methods 2011).
+# Hex codes correspond to:
+#   target  - light neutral grey (background reference)
+#   Exact   - black                  (Wong "Black")
+#   JAM     - bluish-green / teal    (Wong "Bluish green" #009E73)
+#   TDVP1   - vermillion / orange-red (Wong "Vermillion"   #D55E00)
+# The pair (#009E73, #D55E00) is one of the strongest contrasts in
+# the Wong palette under deuteranomaly and protanopia simulations.
+COLOR_TARGET = "#cccccc"
+COLOR_EXACT  = "#000000"
+COLOR_JAM    = "#009E73"
+COLOR_TDVP1  = "#D55E00"
+
+# Best (per-d, per-method) cells found by inspection.
+CELLS = {
+    3: {
+        "jam":       ("data/gmm_3d_hp_v2/jam/N32_K32",        1),
+        "tci_tdvp1": ("data/gmm_3d_hp_v2/tci_tdvp1/N64_K64_D16", 1),
+    },
+    5: {
+        "jam":       ("data/gmm_5d_hp/jam/N16_K64",           0),
+        "tci_tdvp1": ("data/gmm_5d_hp/tci_tdvp1/N32_K64_D16",  0),
+    },
+    7: {
+        "jam":       ("data/gmm_7d_hp/jam/N32_K64",           1),
+        "tci_tdvp1": ("data/gmm_7d_hp/tci_tdvp1/N32_K64_D32",  0),
+    },
+}
+N_SHOW = 500
+
+
+def _load(dir_path: Path, seed: int) -> dict:
+    z = np.load(dir_path / f"seed{seed}.npz", allow_pickle=True)
+    return {
+        "samples_T": np.asarray(z["samples_T"]),
+        "target":    np.asarray(z["target"]),
+        "sw":        float(np.asarray(z["sw"])[-1]),
+        "N":         int(z["N"]),
+        "K":         int(z["K"]),
+    }
+
+
+def _tsne(joined: np.ndarray, seed: int = 0) -> np.ndarray:
+    from sklearn.manifold import TSNE
+    perplexity = min(30, max(5, joined.shape[0] // 5))
+    return TSNE(
+        n_components=2, init="pca", perplexity=perplexity,
+        random_state=seed, learning_rate="auto",
+    ).fit_transform(joined)
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--out", default="figures/fig3_tsne.pdf")
+    args = p.parse_args()
+
+    ds = [3, 5, 7]
+
+    # 1 row x 3 cols: each panel overlays three sample sets via a single
+    # joint t-SNE: "true" target reference, "Exact" independent target
+    # draw (noise floor), and TCI+TDVP1 generated samples.
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5.5), dpi=300,
+                              constrained_layout=True)
+    fig.set_constrained_layout_pads(w_pad=0.20, h_pad=0.10)
+
+    for col_idx, d in enumerate(ds):
+        tdvp1 = _load(Path(CELLS[d]["tci_tdvp1"][0]), CELLS[d]["tci_tdvp1"][1])
+        n = N_SHOW
+        true_target = tdvp1["target"][:n]
+        seed_b = 1 - CELLS[d]["tci_tdvp1"][1]
+        try:
+            exact_draw = _load(Path(CELLS[d]["tci_tdvp1"][0]), seed_b)["target"][:n]
+        except FileNotFoundError:
+            exact_draw = _load(Path(CELLS[d]["jam"][0]),
+                               1 - CELLS[d]["jam"][1])["target"][:n]
+        tdvp1_pts = tdvp1["samples_T"][:n]
+
+        # Joint t-SNE on the union so the three clouds share coordinates.
+        joined = np.concatenate([true_target, exact_draw, tdvp1_pts], axis=0)
+        emb = _tsne(joined, seed=0)
+        n_t = true_target.shape[0]; n_e = exact_draw.shape[0]
+        emb_true  = emb[:n_t]
+        emb_exact = emb[n_t : n_t + n_e]
+        emb_tdvp1 = emb[n_t + n_e:]
+
+        ax = axes[col_idx]
+        # Bottom layer: light-gray "true" target reference.
+        ax.scatter(emb_true[:, 0], emb_true[:, 1], s=24, alpha=0.45,
+                   c=COLOR_TARGET, edgecolors="none", label="True",
+                   zorder=2)
+        # Middle layer: Exact independent draw (sample-size floor).
+        ax.scatter(emb_exact[:, 0], emb_exact[:, 1], s=20, alpha=0.65,
+                   c=COLOR_EXACT, edgecolors="none", label="Exact",
+                   zorder=3)
+        # Top layer: TCI+TDVP1 generated samples.
+        ax.scatter(emb_tdvp1[:, 0], emb_tdvp1[:, 1], s=20, alpha=0.65,
+                   c=COLOR_TDVP1, edgecolors="none", label="TCI+TDVP1",
+                   zorder=4)
+
+        ax.set_xticks([]); ax.set_yticks([])
+        ax.set_title(f"$d = {d}$", fontsize=24, fontweight="bold")
+        # SW annotation chip below the cloud.
+        xlim = ax.get_xlim(); ylim = ax.get_ylim()
+        ax.set_ylim(ylim[0] - 0.18 * (ylim[1] - ylim[0]), ylim[1])
+        ax.text(0.5, 0.035,
+                f"TCI+TDVP1 SW = {tdvp1['sw']:.3f}",
+                transform=ax.transAxes, va="bottom", ha="center",
+                fontsize=17, color="black",
+                bbox=dict(boxstyle="round,pad=0.30", fc="white",
+                          ec="lightgray", alpha=0.95))
+
+    # Single legend for all three panels.
+    handles, labels = axes[0].get_legend_handles_labels()
+    leg = fig.legend(handles, labels, loc="lower center",
+               bbox_to_anchor=(0.5, 1.0),
+               ncol=len(labels), fontsize=20, frameon=False,
+               handlelength=1.0, columnspacing=1.6)
+    for h in leg.legend_handles:
+        h.set_sizes([90])
+
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, bbox_inches="tight", dpi=300)
+    print(f"saved {out}")
+
+
+if __name__ == "__main__":
+    main()
