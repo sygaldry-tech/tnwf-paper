@@ -25,8 +25,7 @@ evolution with tensor-network methods, evolving a wavefunction MPS under
 6. **ACI+TDVP1** — ACI-built MPO + 1-site TDVP
 7. **ACI+TDVP2** — ACI-built MPO + 2-site TDVP
 
-Background notes: [`THEORY.md`](THEORY.md), [`ADJOINT_METHOD.md`](ADJOINT_METHOD.md),
-[`RIEMANNIAN_ADAM.md`](RIEMANNIAN_ADAM.md).
+Background notes: [`THEORY.md`](THEORY.md).
 
 ## Installation
 
