@@ -1,7 +1,7 @@
-# tnWF — Scalable Simulation of Wavefunction Flows via Tensor Networks
+# tnWF — Exponentially-accelerated simulations of wavefunction flows via tensor networks
 
-Reproduction code for the paper **"Scalable Simulation of Wavefunction Flows via
-Tensor Networks"** (npj Quantum Information, in submission).
+Reproduction code for the paper **"Exponentially-accelerated simulations of
+wavefunction flows via tensor networks"** (npj Quantum Information, in submission).
 
 > 📄 Paper: _link to appear (arXiv / journal)_
 > 🔖 If you use this code, please cite the paper — see [`CITATION.cff`](CITATION.cff).

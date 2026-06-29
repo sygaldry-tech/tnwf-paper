@@ -1,2 +1,2 @@
-"""tnWF — Scalable Simulation of Wavefunction Flows via Tensor Networks."""
+"""tnWF — Exponentially-accelerated simulations of wavefunction flows via tensor networks."""
 __version__ = "0.1.0"
