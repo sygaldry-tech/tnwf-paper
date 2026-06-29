@@ -9,7 +9,7 @@ __pycache__/
 .venv/
 # NOTE: uv.lock IS tracked in this release (reproducible deps + license review).
 
-# Generated outputs (regenerate with the scripts under scripts/ and modal/).
+# Generated outputs (regenerate with the scripts under scripts/).
 # Anchored to the repo root so the src/tnwf/data and tests/data PACKAGES are
 # still tracked.
 /results/

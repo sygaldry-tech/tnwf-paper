@@ -742,7 +742,7 @@ def run(
         _record(state, _target_at(k + 1))
         if checkpoint_every > 0 and (k + 1) % checkpoint_every == 0:
             _save_checkpoint(next_k=k + 1)
-        # Per-step progress (flushed for live Modal logs). Only every
+        # Per-step progress (flushed for live logs). Only every
         # `progress_every` step so we don't drown short cells with output.
         if (k + 1) % progress_every == 0 or (k + 1) == K:
             chi_last = chi_list[-1] if chi_list else 0

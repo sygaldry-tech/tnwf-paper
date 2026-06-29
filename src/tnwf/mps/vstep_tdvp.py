@@ -26,8 +26,8 @@ def apply_V_step_mps_tci_tdvp1(
     """TCI MPO + 1-site TDVP. Bond dim is fixed (no SVD).
 
     `device='cuda'` dispatches the inner TDVP loop to the torch port in
-    `tnwf.mps.tdvp_torch` (Arnoldi expm + torch.linalg.qr on GPU). See
-    `modal/bench_gpu_paths.py` for the speedup analysis that motivates this.
+    `tnwf.mps.tdvp_torch` (Arnoldi expm + torch.linalg.qr on GPU), which gives
+    a large speedup at our regime sizes.
     """
     input_norm = mps_norm(mps)
     V_mpo = build_V_mpo(

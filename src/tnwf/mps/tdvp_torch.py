@@ -12,7 +12,7 @@ Tensors are kept on `device` throughout the inner loop; the caller can pass
 numpy arrays (auto-converted) or torch tensors. Output is always a list of
 numpy `complex128` arrays so existing pipelines don't see a type change.
 
-Per the GPU kernel benchmark (see `modal/bench_gpu_paths.py`):
+Per GPU kernel benchmarks:
 - Krylov-on-GPU vs scipy CPU: 80–500× at our regime sizes.
 - SVD on GPU complex128: 4–9× (capped — no Tensor Cores for complex128).
 

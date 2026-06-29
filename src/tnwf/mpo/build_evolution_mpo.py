@@ -22,7 +22,7 @@ def _make_grid_1d(N: int, L: float) -> np.ndarray:
 # Maximum number of points evaluated by V_fn in a single call. The analytic
 # V_fn allocates an (n_pts, K_modes, d) tensor of squared-distances; at d=6
 # with K_modes=12 a 65k-point batch is ~38 MB, which compounds across many
-# in-flight calls and tipped 64 GB Modal containers OOM at d=6 N=64. Capping
+# in-flight calls and tipped 64 GB hosts into OOM at d=6 N=64. Capping
 # per-call batch keeps peak per-call memory bounded regardless of how big
 # tt_cross's index batch grows.
 ORACLE_CHUNK = 4096

@@ -13,7 +13,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-modal = ["modal>=0.64"]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.1",
@@ -26,11 +25,10 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short -m \"not heavy_duty\""
+addopts = "-v --tb=short"
 markers = [
     "needle: quick experiment (<30s)",
     "medium: pipeline experiment (30s-5min)",
-    "heavy_duty: full sweep (>5min, Modal)",
 ]
 
 [tool.ruff]

@@ -4,10 +4,9 @@ conftest.py — test infrastructure for tnWF.
 Tiered markers (mirrors the research prototype convention):
   needle     — quick smoke tests (<30s)
   medium     — pipeline tests (30s-5min)
-  heavy_duty — full sweeps (>5min, Modal-only by default)
 
 Usage:
-  pytest                                 # all non-heavy_duty
+  pytest                                 # all tests
   pytest -m needle                       # only needle
   pytest -m "needle or medium"           # both
   pytest --save-plots                    # persist plots to results/experiment_tests/

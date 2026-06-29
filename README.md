@@ -28,7 +28,7 @@ Background notes: [`THEORY.md`](THEORY.md).
 This project uses [uv](https://docs.astral.sh/uv/). Python ≥ 3.11.
 
 ```bash
-uv sync --all-extras
+uv sync --extra dev
 ```
 
 ## Quickstart
@@ -62,9 +62,17 @@ results. Each generator writes to a relative `figures/` path by default
 | fig_gmm_ode             | `scripts/make_fig_gmm_ode.py` |
 | Table 3 (Pareto configs)| `scripts/make_table3_pareto_configs.py` |
 
-The data the figure scripts read (`data/gmm_*_hp/…`) is produced by the
-per-dataset runners (`scripts/{swiss_roll_2d,gmm_2d,gmm_3d}/{train_jam,run_all_methods}.py`)
-and the GMM/scaling sweeps under `modal/`.
+**Data provenance.** Figs 1–2 and `fig_gmm_ode` reproduce locally: the
+per-dataset runners
+(`scripts/{swiss_roll_2d,gmm_2d,gmm_3d}/{train_jam,run_all_methods}.py`) write
+to `data/{swiss_roll_2d,gmm_2d,gmm_3d}/…`, which those generators read.
+
+Figs 3–4, Fig S1, and Table 3 instead read the hyperparameter-sweep outputs
+under `data/gmm_*_hp*/` (e.g. `data/gmm_5d_hp`, `data/gmm_3d_hp_v2`). Those
+sweeps spanned dimensions up to `gmm_8d` and were run on a large parallel
+cloud-compute backend; **the sweep outputs and their drivers are not included
+in this repository.** The generator scripts are provided so the exact figures
+can be reproduced from sweep outputs of the same layout.
 
 ## Layout
 
@@ -73,7 +81,6 @@ tnWF/
 ├── src/tnwf/             # package: jam/, mps/, mpo/, dense/, metrics/, data/, pipelines/
 ├── tests/                # pytest suite mirroring src/tnwf/
 ├── scripts/{dataset}/    # per-dataset runners + figure generators
-├── modal/                # distributed d/N scaling sweeps (optional, needs Modal)
 ├── pyproject.toml        # package + dependency declarations
 ├── uv.lock               # fully pinned dependency lock
 └── licenses/             # third-party dependency license manifest
