@@ -6,6 +6,13 @@ wavefunction flows via tensor networks"** (npj Quantum Information, in submissio
 > 📄 Paper: _link to appear (arXiv / journal)_
 > 🔖 If you use this code, please cite the paper — see [`CITATION.cff`](CITATION.cff).
 
+![Dense wavefunction evolution on the Swiss-roll target](assets/fig2_dense.png)
+
+*Paper Fig. 2 — dense wavefunction evolution (N=64) across generation time. Top:
+the complex wavefunction ψ(t) (hue = arg ψ, brightness = |ψ|). Bottom: the
+probability mass |ψ(t)|². The dynamics under Hᶜ = i[K, Vₜ] smoothly transport the
+Gaussian source into the target distribution.*
+
 ## Overview
 
 We compress the position-diagonal potential ("V-step") of a wavefunction-flow
@@ -45,6 +52,25 @@ uv run python scripts/make_fig2_dense_evolution.py   # writes figures/fig2_dense
 ```
 
 Datasets are generated on the fly: `swiss_roll_2d` and `gmm_2d … gmm_16d`.
+
+## Demo notebook
+
+[`examples/tnwf_demo.ipynb`](examples/tnwf_demo.ipynb) is a self-contained tour of
+the V-step methods (no training required — it uses the closed-form analytic GMM
+potential):
+
+- **Part 1** — `Dense` vs `TCI+1TDVP` on a 3-D Gaussian mixture, compared by a
+  t-SNE overlay against the target (reproduces paper **Fig. 5**, left / *d*=3).
+- **Part 2** — a guided `TCI+2TDVP` run at *d*=8, σ=0.5, *K*=40, showing the
+  accuracy, self-limiting bond dimension (χ\* ≈ 16), and cost (reproduces the
+  2TDVP curve of paper **Fig. 7**). Runs in ~2–3 min on a laptop CPU.
+
+```bash
+make notebook        # or: uv run --with jupyter jupyter notebook examples/tnwf_demo.ipynb
+```
+
+(Jupyter is pulled in on demand via `uv run --with`, so it stays out of the
+project's locked dependencies.)
 
 ## Reproducing the paper figures
 

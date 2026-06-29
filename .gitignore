@@ -5,6 +5,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# Notebooks
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
 # uv
 .venv/
 # NOTE: uv.lock IS tracked in this release (reproducible deps + license review).
@@ -25,6 +29,9 @@ __pycache__/
 *.pt
 *.pkl
 *.amat
+# ...but the committed README/doc assets are tracked.
+!assets/
+!assets/**
 
 # OS
 .DS_Store

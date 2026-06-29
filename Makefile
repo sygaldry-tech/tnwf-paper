@@ -1,7 +1,7 @@
 .PHONY: help sync test test-needle test-medium \
         jam-all jam-swiss jam-gmm2 jam-gmm3 \
         run-swiss run-gmm2 run-gmm3 \
-        fig1 fig2 fig3 fig4 figs supp leaderboard leaderboard-nll clean-results
+        fig1 fig2 fig3 fig4 figs supp notebook leaderboard leaderboard-nll clean-results
 
 help:
 	@echo "tnWF — npj-QI reproduction Makefile"
@@ -26,6 +26,8 @@ help:
 	@echo "  make fig3          render Fig 3 (t-SNE grid)   — needs gmm_*_hp sweep data"
 	@echo "  make fig4          render Fig 4 (cost scaling)  — needs gmm_*_hp sweep data"
 	@echo "  make supp          render Fig S1 + Table 3      — needs gmm_*_hp sweep data"
+	@echo ""
+	@echo "  make notebook      launch the examples/tnwf_demo.ipynb demo notebook"
 	@echo ""
 	@echo "  NB: fig3/fig4/supp read data/gmm_*_hp*/ produced by large cloud"
 	@echo "      HP-sweeps not included in this repository (see README)."
@@ -86,6 +88,10 @@ fig4:
 supp:
 	uv run python scripts/make_fig_supp_pareto.py
 	uv run python scripts/make_table3_pareto_configs.py
+
+# ── demo notebook ─────────────────────────────────────────────────────────
+notebook:
+	uv run --with jupyter jupyter notebook examples/tnwf_demo.ipynb
 
 # ── leaderboard ───────────────────────────────────────────────────────────
 leaderboard:
