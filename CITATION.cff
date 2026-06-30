@@ -10,7 +10,7 @@ authors:
   # TODO(author): fill in the full author list, ORCIDs, and affiliations.
   - given-names: TODO
     family-names: TODO
-repository-code: "https://github.com/sygaldry-tech/TNWF-paper"
+repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
 license: "TODO"  # set once the outbound license is finalized
 preferred-citation:
   type: article
