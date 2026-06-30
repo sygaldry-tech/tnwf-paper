@@ -27,6 +27,10 @@ evolution with tensor-network methods, evolving a wavefunction MPS under
 1. **Dense** — exact `O(N^d)` reference
 2. **TCI+TDVP1** — TT-cross MPO + 1-site TDVP V-step
 3. **TCI+TDVP2** — TT-cross MPO + 2-site TDVP V-step
+4. **MPS-V + 2TDVP** — a velocity potential pre-trained as a tensor train
+   (`tnwf.mps_v`) fed directly to the 2-site TDVP V-step, with **no runtime
+   tensor-cross** (the trained-V "bypass"). Train one with
+   `python -m tnwf.mps_v.train`; run via `run(method="mps_v_tdvp2", ...)`.
 
 Background notes: [`THEORY.md`](THEORY.md).
 
@@ -61,9 +65,12 @@ potential):
 
 - **Part 1** — `Dense` vs `TCI+1TDVP` on a 3-D Gaussian mixture, compared by a
   t-SNE overlay against the target (reproduces paper **Fig. 5**, left / *d*=3).
-- **Part 2** — a guided `TCI+2TDVP` run at *d*=8, σ=0.5, *K*=40, showing the
-  accuracy, self-limiting bond dimension (χ\* ≈ 16), and cost (reproduces the
-  2TDVP curve of paper **Fig. 7**). Runs in ~2–3 min on a laptop CPU.
+- **Part 2** — the **V-MPS + 2TDVP** pipeline at *d*=8, σ=0.5, *K*=40: a trained
+  tensor-train velocity potential (MPS-V) fed directly to 2-site TDVP with no
+  runtime cross, showing accuracy, the self-limiting bond dimension (χ\* ≈ 16),
+  and cost (reproduces the 2TDVP curve of paper **Fig. 7**). Uses the shipped
+  checkpoint [`examples/checkpoints/mps_v_gmm_d8.pt`](examples/checkpoints);
+  runs in ~3 min on a laptop CPU.
 
 ```bash
 make notebook        # or: uv run --with jupyter jupyter notebook examples/tnwf_demo.ipynb
@@ -104,7 +111,7 @@ can be reproduced from sweep outputs of the same layout.
 
 ```
 tnWF/
-├── src/tnwf/             # package: jam/, mps/, mpo/, dense/, metrics/, data/, pipelines/
+├── src/tnwf/             # package: jam/, mps_v/, mps/, mpo/, dense/, metrics/, data/, pipelines/
 ├── tests/                # pytest suite mirroring src/tnwf/
 ├── scripts/{dataset}/    # per-dataset runners + figure generators
 ├── pyproject.toml        # package + dependency declarations

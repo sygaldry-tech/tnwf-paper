@@ -53,16 +53,25 @@ def apply_V_step_mps_tci_tdvp2(
     N: int, d: int, L: float, D_max: int, D_V: int = 32,
     n_sweeps: int = 1, n_sweeps_cross: int = 2, tol: float = 1e-8,
     device: str = "cpu",
+    V_mpo_provider: Callable | None = None,
 ):
     """TCI MPO + 2-site TDVP. Bond dim grows up to D_max via SVD split.
 
     `device='cuda'` dispatches the inner TDVP loop to the torch port.
+
+    If `V_mpo_provider` is given, it is called as `V_mpo_provider(t_k)` to
+    supply the V_t MPS cores directly (the MPS-V bypass), skipping the runtime
+    TT-cross `build_V_mpo`. The provider must return cores in the same layout
+    build_V_mpo produces: list of `(D_L, N, D_R)` arrays cast to complex128.
     """
     input_norm = mps_norm(mps)
-    V_mpo = build_V_mpo(
-        V_fn, t=t_k, N=N, d=d, L=L,
-        D_max=D_V, n_sweeps=n_sweeps_cross,
-    )
+    if V_mpo_provider is not None:
+        V_mpo = [np.asarray(c, dtype=np.complex128) for c in V_mpo_provider(t_k)]
+    else:
+        V_mpo = build_V_mpo(
+            V_fn, t=t_k, N=N, d=d, L=L,
+            D_max=D_V, n_sweeps=n_sweeps_cross,
+        )
     mps_c = [c.astype(np.complex128) for c in mps]
     if device == "cpu":
         out = tdvp_2site_diagonal(

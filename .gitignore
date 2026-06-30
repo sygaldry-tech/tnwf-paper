@@ -29,9 +29,11 @@ __pycache__/
 *.pt
 *.pkl
 *.amat
-# ...but the committed README/doc assets are tracked.
+# ...but the committed README/doc assets and the demo MPS-V checkpoint are tracked.
 !assets/
 !assets/**
+!examples/checkpoints/
+!examples/checkpoints/**
 
 # OS
 .DS_Store

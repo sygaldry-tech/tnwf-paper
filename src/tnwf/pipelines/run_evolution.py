@@ -48,6 +48,7 @@ Method = Literal[
     "dense",
     "tci_tdvp1",
     "tci_tdvp2",
+    "mps_v_tdvp2",  # trained MPS-V cores fed to 2-site TDVP (no runtime cross)
 ]
 
 
@@ -229,20 +230,22 @@ def _make_v_step(method: Method, **method_kw):
                 device=device,
             )
         return f
-    if method == "tci_tdvp2":
+    if method in ("tci_tdvp2", "mps_v_tdvp2"):
         D_max = method_kw.get("D_max", 16)
         D_V = method_kw.get("D_V", 16)
         n_sw = method_kw.get("n_sweeps", 1)
         n_sw_cross = method_kw.get("n_sweeps_cross", 2)
         tol = method_kw.get("tol", 1e-8)
         device = method_kw.get("device", "cpu")
+        # MPS-V bypass: supplies V_t cores directly, skipping the runtime cross.
+        v_mpo_provider = method_kw.get("v_mpo_provider", None)
 
         def f(state, V_fn, beta, t_k, N, d, L):
             return apply_V_step_mps_tci_tdvp2(
                 state, V_fn=V_fn, beta=beta, t_k=t_k, N=N, d=d, L=L,
                 D_max=D_max, D_V=D_V,
                 n_sweeps=n_sw, n_sweeps_cross=n_sw_cross, tol=tol,
-                device=device,
+                device=device, V_mpo_provider=v_mpo_provider,
             )
         return f
     raise ValueError(f"Unknown method: {method}")
@@ -475,6 +478,7 @@ def run(
     method_kwargs: dict | None = None,
     snapshot_psi: bool = False,
     V_source: str = "jam",
+    mps_v_ckpt: str | None = None,
     checkpoint_path: str | Path | None = None,
     checkpoint_callback=None,
     checkpoint_every: int = 1,
@@ -495,7 +499,26 @@ def run(
     (and optionally psi_T, psi_per_step).
     """
     method_kwargs = method_kwargs or {}
-    if V_source == "analytic":
+    if method == "mps_v_tdvp2":
+        # Trained MPS-V bypass: V_t cores come from the model, not a runtime
+        # cross or an analytic/JAM V_fn. The evolution grid N is fixed by the
+        # trained model.
+        if mps_v_ckpt is None:
+            raise ValueError("method='mps_v_tdvp2' requires mps_v_ckpt=<path>.")
+        from tnwf.mps_v import load_mps_v, make_mps_v_provider
+        mps_v_model, vcfg = load_mps_v(mps_v_ckpt, device="cpu")
+        if d is None:
+            d = vcfg["d"]
+        if L is None:
+            L = vcfg["L"]
+        N = vcfg["N"]
+        method_kwargs = {
+            **method_kwargs,
+            "v_mpo_provider": make_mps_v_provider(mps_v_model, N=N, L=L),
+        }
+        V_fn = None
+        model = None
+    elif V_source == "analytic":
         from tnwf.theory import make_analytic_V_fn
         V_fn = make_analytic_V_fn(dataset)
         # Pull (d, L) from the dataset defaults rather than from a JAM ckpt

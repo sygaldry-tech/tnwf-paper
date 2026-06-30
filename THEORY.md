@@ -109,6 +109,17 @@ mixtures (target modes at $\pm c\,e_j$, $j = 1, \ldots, d$, used in this
 repo), there is partial separability that makes the bond dimension empirically
 manageable, but no exact low-rank structure.
 
+### MPS-V: learning the V-step operator directly as a tensor train
+
+Rather than building $\mathrm{diag}(e^{i\beta V_t})$ by a runtime tensor-cross
+each Trotter step, the potential $V_t$ can be **pre-trained as a real tensor
+train** — an *MPS-V* (`tnwf.mps_v`). $V$ is represented as a $(d{+}1)$-site MPS
+(one site per spatial axis, plus a time site) and fit by the same action-matching
+loss used for the MLP potential. At evolution time its cores at $t$ are read off
+(`get_mps_cores(t)`) and fed *directly* to the 2-site TDVP V-step — **no runtime
+cross** (the trained-V "bypass"). Because the cores are real, $e^{i\beta V_t}$ is
+exactly unitary by construction. Run it via `run(method="mps_v_tdvp2", ...)`.
+
 ## 4. The wavefunction $\psi_t$
 
 The Layden construction guarantees $|\psi_t|^2 = p_t$. The magnitude is
