@@ -42,3 +42,6 @@ __pycache__/
 .vscode/
 .idea/
 *.code-workspace
+
+# Local rare-event QAE bridge (separate workstream; internal paths, do not ship)
+scripts/gmm_8d_rare_event/
