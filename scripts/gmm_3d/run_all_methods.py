@@ -26,7 +26,7 @@ def main():
     p.add_argument("--force", action="store_true",
                    help="Overwrite existing seed*.npz instead of skipping.")
     p.add_argument("--analytic_V", action="store_true",
-                   help="Use closed-form V_t (THEORY.md) instead of trained JAM. "
+                   help="Use closed-form V_t (analytic, tnwf.theory) instead of trained JAM. "
                         "JAM method itself still needs the ckpt for gradient flow.")
     args = p.parse_args()
 

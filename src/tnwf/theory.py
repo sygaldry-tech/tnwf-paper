@@ -7,7 +7,7 @@ JAM-trained scalar potential V_t(x) admits the closed form
              + ((1-t) σ_0² / t) · log p_t(x) + C(t)
 
 where p_t(x) = Σ_k w_k N(x; t c_k, Σ_k(t)) is itself a Gaussian mixture
-(see THEORY.md for the derivation via Tweedie's identity). We can use this
+(derivation via Tweedie's identity). We can use this
 to skip JAM training entirely on GMM datasets — all error in the V-step
 pipeline then comes from Trotter splitting, grid quantisation, and MPS
 truncation, with no JAM training noise.

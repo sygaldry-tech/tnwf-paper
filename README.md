@@ -32,8 +32,6 @@ evolution with tensor-network methods, evolving a wavefunction MPS under
    tensor-cross** (the trained-V "bypass"). Train one with
    `python -m tnwf.mps_v.train`; run via `run(method="mps_v_tdvp2", ...)`.
 
-Background notes: [`THEORY.md`](THEORY.md).
-
 ## Installation
 
 This project uses [uv](https://docs.astral.sh/uv/). Python ≥ 3.11.
@@ -61,7 +59,8 @@ Datasets are generated on the fly: `swiss_roll_2d` and `gmm_2d … gmm_16d`.
 
 [`examples/tnwf_demo.ipynb`](examples/tnwf_demo.ipynb) is a self-contained tour of
 the V-step methods (no training required — it uses the closed-form analytic GMM
-potential):
+potential). **It ships with its outputs rendered, so the figures are viewable
+directly on GitHub without running anything:**
 
 - **Part 1** — `Dense` vs `TCI+1TDVP` on a 3-D Gaussian mixture, compared by a
   t-SNE overlay against the target (reproduces paper **Fig. 5**, left / *d*=3).

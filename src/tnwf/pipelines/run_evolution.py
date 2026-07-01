@@ -492,7 +492,7 @@ def run(
                    or method="jam".
         V_source:  "jam"      — load V_t from the trained MLP (default).
                    "analytic" — closed-form V_t for Gaussian-source GMM
-                                targets (see THEORY.md). No JAM needed.
+                                targets (see tnwf.theory). No JAM needed.
 
     Returns dict with method, dataset, seed, N, d, K, L, sw, mmd, nll,
     chi_max, samples_T, target, samples_per_step, step_times, total_time
