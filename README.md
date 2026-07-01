@@ -67,13 +67,14 @@ potential):
   t-SNE overlay against the target (reproduces paper **Fig. 5**, left / *d*=3).
 - **Part 2** — the **V-MPS + 2TDVP** pipeline at *d*=8, σ=0.5: a trained
   tensor-train velocity potential (MPS-V) fed directly to 2-site TDVP with no
-  runtime cross, showing accuracy, the self-limiting bond dimension (χ\* ≈ 16),
-  and cost (reproduces the 2TDVP curve of paper **Fig. 7**). Training and
-  generation are standalone scripts under [`scripts/mps_v/`](scripts/mps_v);
-  the notebook loads the shipped checkpoint and its generated trajectory
-  ([`examples/checkpoints/`](examples/checkpoints)). The shipped trajectory is
-  K=40 (SW ≈ 0.12); rerun `scripts/mps_v/generate.py --K 160` for the paper's
-  near-floor SW ≈ 0.036 (Table 2).
+  runtime cross. Loads the paper's **Table 2** run (N=32, K=160) — grid-unbiased
+  sliced-Wasserstein **0.036 ± 0.003** (at the sample-size floor 0.030),
+  self-limiting bond χ\* ≈ 16 — and a t-SNE from the saved final state. Training
+  and generation are standalone scripts under [`scripts/mps_v/`](scripts/mps_v);
+  the shipped `.npz` ([`examples/checkpoints/`](examples/checkpoints)) is the
+  paper run's per-step metrics plus samples of its final wavefunction, so no
+  multi-hour re-run is needed. Reproduce from scratch with
+  `scripts/mps_v/generate.py --K 160`.
 
 ```bash
 make notebook        # or: uv run --with jupyter jupyter notebook examples/tnwf_demo.ipynb
