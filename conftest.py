@@ -1,5 +1,5 @@
 """
-conftest.py — test infrastructure for tnWF.
+conftest.py — test infrastructure for tnwf.
 
 Tiered markers (mirrors the research prototype convention):
   needle     — quick smoke tests (<30s)

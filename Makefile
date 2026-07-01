@@ -4,7 +4,7 @@
         fig1 fig2 fig3 fig4 figs supp notebook leaderboard leaderboard-nll clean-results
 
 help:
-	@echo "tnWF — npj-QI reproduction Makefile"
+	@echo "tnwf — npj-QI reproduction Makefile"
 	@echo ""
 	@echo "  make sync          uv sync --extra dev"
 	@echo "  make test-needle   pytest -m needle (<30s)"

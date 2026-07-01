@@ -1,6 +1,6 @@
-# tnWF — Scalable simulations of wavefunction flows via tensor networks
+# tnwf — Scalable simulation of wavefunction flows via tensor networks
 
-Reproduction code for the paper **"Scalable simulations of wavefunction flows
+Reproduction code for the paper **"Scalable simulation of wavefunction flows
 via tensor networks"** (npj Quantum Information, in submission).
 
 > 📄 Paper: _link to appear (arXiv / journal)_
@@ -113,7 +113,7 @@ can be reproduced from sweep outputs of the same layout.
 ## Layout
 
 ```
-tnWF/
+tnwf/
 ├── src/tnwf/             # package: jam/, mps_v/, mps/, mpo/, dense/, metrics/, data/, pipelines/
 ├── tests/                # pytest suite mirroring src/tnwf/
 ├── scripts/{dataset}/    # per-dataset runners + figure generators

@@ -74,4 +74,4 @@ def test_write_csv_md_smoke(tmp_path):
     write_csv(rows, path=tmp_path / "lb.csv")
     write_markdown(rows, path=tmp_path / "lb.md")
     assert (tmp_path / "lb.csv").exists()
-    assert (tmp_path / "lb.md").read_text().startswith("# tnWF leaderboard")
+    assert (tmp_path / "lb.md").read_text().startswith("# tnwf leaderboard")

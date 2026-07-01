@@ -434,7 +434,7 @@ def write_markdown(rows: list[Row], path: str | Path = LEADERBOARD_MD,
     n_datasets = len({r.dataset for r in rows})
     n_seeds_total = sum(r.n_seeds for r in rows)
     header = (
-        f"# tnWF leaderboard\n\n"
+        f"# tnwf leaderboard\n\n"
         f"**{n_total} configs** across **{n_datasets} datasets**, "
         f"**{n_seeds_total} total runs**. "
         f"Sort: `{sort_by}` (ascending = better; lower SW / MMD is better). "
