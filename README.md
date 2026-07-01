@@ -65,14 +65,15 @@ potential):
 
 - **Part 1** — `Dense` vs `TCI+1TDVP` on a 3-D Gaussian mixture, compared by a
   t-SNE overlay against the target (reproduces paper **Fig. 5**, left / *d*=3).
-- **Part 2** — the **V-MPS + 2TDVP** pipeline at *d*=8, σ=0.5, *K*=40 (final
-  SW ≈ 0.12): a trained tensor-train velocity potential (MPS-V) fed directly to
-  2-site TDVP with no runtime cross, showing accuracy, the self-limiting bond
-  dimension (χ\* ≈ 16), and cost (reproduces the 2TDVP curve of paper **Fig. 7**).
-  Because the fine grid (N=32) makes the K=40 sweep a ~1 h CPU job, the trajectory
-  is **precomputed and shipped** ([`examples/checkpoints/`](examples/checkpoints))
-  and the notebook loads it; the trained model also ships so you can rerun it
-  (minutes on a GPU).
+- **Part 2** — the **V-MPS + 2TDVP** pipeline at *d*=8, σ=0.5: a trained
+  tensor-train velocity potential (MPS-V) fed directly to 2-site TDVP with no
+  runtime cross, showing accuracy, the self-limiting bond dimension (χ\* ≈ 16),
+  and cost (reproduces the 2TDVP curve of paper **Fig. 7**). Training and
+  generation are standalone scripts under [`scripts/mps_v/`](scripts/mps_v);
+  the notebook loads the shipped checkpoint and its generated trajectory
+  ([`examples/checkpoints/`](examples/checkpoints)). The shipped trajectory is
+  K=40 (SW ≈ 0.12); rerun `scripts/mps_v/generate.py --K 160` for the paper's
+  near-floor SW ≈ 0.036 (Table 2).
 
 ```bash
 make notebook        # or: uv run --with jupyter jupyter notebook examples/tnwf_demo.ipynb
