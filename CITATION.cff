@@ -1,10 +1,11 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the paper below."
-title: "tnwf — Scalable simulation of wavefunction flows via tensor networks"
+title: "tnwf — Quantum simulation of diffusion and flow-based generative models via tensor networks"
 abstract: >-
-  Reproduction code for "Scalable simulation of wavefunction flows via tensor
-  networks": compressing the position-diagonal V-step of a wavefunction-flow
-  evolution with tensor-network methods (TCI/ACI + TDVP).
+  Reproduction code for "Quantum simulation of diffusion and flow-based
+  generative models via tensor networks": compressing the position-diagonal
+  V-step of a wavefunction-flow evolution with tensor-network methods
+  (TCI/ACI + TDVP).
 type: software
 authors:
   # TODO(author): fill in the full author list, ORCIDs, and affiliations.
@@ -14,7 +15,7 @@ repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
 license: "TODO"  # set once the outbound license is finalized
 preferred-citation:
   type: article
-  title: "Scalable simulation of wavefunction flows via tensor networks"
+  title: "Quantum simulation of diffusion and flow-based generative models via tensor networks"
   authors:
     - given-names: TODO
       family-names: TODO
