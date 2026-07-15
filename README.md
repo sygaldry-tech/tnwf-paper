@@ -1,6 +1,6 @@
-# tnwf — Quantum simulation of continuous-time generative models via tensor networks
+# tnwf — Scalable quantum simulation of continuous-time generative models via tensor networks
 
-Reproduction code for the paper **"Quantum simulation of continuous-time
+Reproduction code for the paper **"Scalable quantum simulation of continuous-time
 generative models via tensor networks"** (npj Quantum Information,
 in submission).
 
