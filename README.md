@@ -1,7 +1,7 @@
-# tnwf — Quantum simulation of diffusion and flow-based generative models via tensor networks
+# tnwf — Quantum simulation of flow-based generative models via tensor networks
 
-Reproduction code for the paper **"Quantum simulation of diffusion and
-flow-based generative models via tensor networks"** (npj Quantum Information,
+Reproduction code for the paper **"Quantum simulation of flow-based
+generative models via tensor networks"** (npj Quantum Information,
 in submission).
 
 > 📄 Paper: _link to appear (arXiv / journal)_
