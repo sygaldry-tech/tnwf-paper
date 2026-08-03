@@ -12,7 +12,6 @@ K-step is applied via FFT in O(N^d log N); V-step is pointwise multiplication.
 from __future__ import annotations
 
 import math
-from typing import Callable
 
 import numpy as np
 
@@ -106,23 +105,3 @@ def evolve_wavefunction_conservative(
             psi, step["V_grid"], step["alpha"], step["beta"], N, d, L, eigenvalues
         )
     return psi
-
-
-def build_steps_from_V_fn(
-    V_fn: Callable[[np.ndarray, float], np.ndarray],
-    grid: np.ndarray,
-    K: int,
-    delta_t: float,
-    N: int,
-    d: int,
-    L: float,
-    t_eps: float = 1e-5,
-) -> list[dict]:
-    """Discretize V_fn(x, t) into K Trotter-step dicts at midpoints t_k = (k+½)Δt."""
-    alpha, beta = trotter_coefficients(delta_t, N, d, L)
-    steps = []
-    for k in range(K):
-        t_mid = max((k + 0.5) * delta_t, t_eps)
-        V_grid = np.asarray(V_fn(grid, t_mid)).ravel()
-        steps.append({"V_grid": V_grid, "alpha": alpha, "beta": beta})
-    return steps

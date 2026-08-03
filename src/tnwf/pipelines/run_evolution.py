@@ -13,7 +13,6 @@ this:
 """
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from typing import Callable, Literal
 
@@ -28,8 +27,13 @@ from tnwf.dense.evolution import (
 )
 from tnwf.grid import make_grid, make_kinetic_eigenvalues
 from tnwf.jam.train import load_jam, make_V_fn, sample_gradient_flow
-from tnwf.metrics import (density_from_psi, mmd_rbf, nll_from_density_grid,
-                           sliced_wasserstein, wasserstein_2_subsampled)
+from tnwf.metrics import (
+    density_from_psi,
+    mmd_rbf,
+    nll_from_density_grid,
+    sliced_wasserstein,
+    wasserstein_2_subsampled,
+)
 from tnwf.mps.core import (
     apply_K_step_mps,
     chi_max,
@@ -90,7 +94,6 @@ def initial_psi_mps_from_samples(samples_world: np.ndarray, N: int, d: int,
     (1024 cells) and EB ``N=16 d=5`` (≈ 1M cells). For larger cells, use
     TCI from samples directly (TODO).
     """
-    from tnwf.mps.core import dense_to_mps
     edges = [np.linspace(0.0, L, N + 1) for _ in range(d)]
     counts, _ = np.histogramdd(samples_world, bins=edges)
     counts = counts.astype(np.float64) + eps / (N ** d)
@@ -221,13 +224,11 @@ def _make_v_step(method: Method, **method_kw):
         D_V = method_kw.get("D_V", 16)
         n_sw = method_kw.get("n_sweeps", 1)
         n_sw_cross = method_kw.get("n_sweeps_cross", 2)
-        device = method_kw.get("device", "cpu")
 
         def f(state, V_fn, beta, t_k, N, d, L):
             return apply_V_step_mps_tci_tdvp1(
                 state, V_fn=V_fn, beta=beta, t_k=t_k, N=N, d=d, L=L,
                 D_V=D_V, n_sweeps=n_sw, n_sweeps_cross=n_sw_cross,
-                device=device,
             )
         return f
     if method in ("tci_tdvp2", "mps_v_tdvp2"):
@@ -236,7 +237,6 @@ def _make_v_step(method: Method, **method_kw):
         n_sw = method_kw.get("n_sweeps", 1)
         n_sw_cross = method_kw.get("n_sweeps_cross", 2)
         tol = method_kw.get("tol", 1e-8)
-        device = method_kw.get("device", "cpu")
         # MPS-V bypass: supplies V_t cores directly, skipping the runtime cross.
         v_mpo_provider = method_kw.get("v_mpo_provider", None)
 
@@ -245,7 +245,7 @@ def _make_v_step(method: Method, **method_kw):
                 state, V_fn=V_fn, beta=beta, t_k=t_k, N=N, d=d, L=L,
                 D_max=D_max, D_V=D_V,
                 n_sweeps=n_sw, n_sweeps_cross=n_sw_cross, tol=tol,
-                device=device, V_mpo_provider=v_mpo_provider,
+                V_mpo_provider=v_mpo_provider,
             )
         return f
     raise ValueError(f"Unknown method: {method}")
@@ -357,6 +357,7 @@ def _run_jam(
 ) -> dict:
     """Classical JAM baseline: integrate dx/dt = ∇V_t(x), bin samples for density."""
     import time as _time
+
     import torch
 
     rng = np.random.default_rng(seed + 1)
@@ -675,8 +676,8 @@ def run(
         if snapshot_psi and psi_dense is not None:
             psi_snapshots.append(psi_dense.astype(np.complex64))
 
-    import time as _time
     import pickle
+    import time as _time
     t_run_start = _time.perf_counter()
     step_times: list[float] = []
     start_k = 0

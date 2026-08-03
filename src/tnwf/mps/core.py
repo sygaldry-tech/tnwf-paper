@@ -15,7 +15,6 @@ import math
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # dense ↔ MPS
 # ---------------------------------------------------------------------------
@@ -98,7 +97,13 @@ def truncate_mps(
     for j in range(d - 1):
         D_L, N_loc, D_R_old = cores[j].shape
         mat = cores[j].reshape(D_L * N_loc, D_R_old)
-        U, S, Vh = np.linalg.svd(mat, full_matrices=False)
+        try:
+            U, S, Vh = np.linalg.svd(mat, full_matrices=False)
+        except np.linalg.LinAlgError:
+            # gesdd non-convergence on degenerate spectra — same failure mode
+            # as the 2-site theta SVD; reuse the tdvp fallback chain.
+            from tnwf.mps.tdvp import _robust_svd
+            U, S, Vh = _robust_svd(mat, full_matrices=False)
         if tol > 0.0 and S[0] > 0.0:
             D_keep = max(1, min(D_max, int((S > tol * S[0]).sum())))
         else:
@@ -182,16 +187,3 @@ def apply_K_step_mps(
         A_i = np.fft.ifft(A_r, axis=1)
         out.append(A_i * sign_1d[None, :, None])
     return out
-
-
-def eval_mps_at_indices(mps: list[np.ndarray], indices: np.ndarray) -> np.ndarray:
-    """Evaluate ψ(x) at integer multi-indices. indices: (n, d) int. Returns (n,) complex."""
-    d = len(mps)
-    n = indices.shape[0]
-    v = np.ones((n, 1), dtype=np.complex128)
-    for k in range(d):
-        A = mps[k]                                    # (D_L, N, D_R)
-        rows = A[:, indices[:, k], :]                 # (D_L, n, D_R)
-        rows = np.transpose(rows, (1, 0, 2))          # (n, D_L, D_R)
-        v = np.einsum("ni,nij->nj", v, rows)
-    return v[:, 0]

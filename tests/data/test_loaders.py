@@ -4,11 +4,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from tnwf.data.swiss_roll import sample_swiss_roll
 from tnwf.data.gaussian_mixture import (
     gm_mode_centers,
     sample_gaussian_mixture,
 )
+from tnwf.data.swiss_roll import sample_swiss_roll
 
 
 @pytest.mark.needle

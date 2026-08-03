@@ -1,7 +1,8 @@
 .PHONY: help sync test test-needle test-medium \
         jam-all jam-swiss jam-gmm2 jam-gmm3 \
         run-swiss run-gmm2 run-gmm3 \
-        fig1 fig2 fig3 fig4 figs supp notebook leaderboard leaderboard-nll clean-results
+        fig2 fig3 fig4 supp notebook leaderboard leaderboard-nll clean-results \
+        fig-rare-event table1 table2 fig-scaling-bounds
 
 help:
 	@echo "tnwf — npj-QI reproduction Makefile"
@@ -20,12 +21,15 @@ help:
 	@echo "  make run-gmm2      all methods × 10 seeds on gmm_2d"
 	@echo "  make run-gmm3      all methods × 10 seeds × N×K sweep on gmm_3d"
 	@echo ""
-	@echo "  make fig1          render Fig 1 (overview)"
-	@echo "  make fig2          render Fig 2 (dense evolution + tensor networks)"
-	@echo "  make figs          fig1 + fig2 (locally reproducible)"
-	@echo "  make fig3          render Fig 3 (t-SNE grid)   — needs gmm_*_hp sweep data"
-	@echo "  make fig4          render Fig 4 (cost scaling)  — needs gmm_*_hp sweep data"
-	@echo "  make supp          render Fig S1 + Table 3      — needs gmm_*_hp sweep data"
+	@echo "  make fig2          render paper Fig 2 (dense evolution)"
+	@echo "  make fig3          render paper Fig 5 (t-SNE grid)  — needs gmm_*_hp sweeps"
+	@echo "  make fig4          render paper Fig 6 (cost scaling) — needs gmm_*_hp sweeps"
+	@echo "  make supp          render paper Fig S1              — needs gmm_*_hp sweeps"
+	@echo ""
+	@echo "  make table1        render paper Table 1 (best-cell SW) — needs gmm_*_hp sweeps"
+	@echo "  make table2        render paper Table 2 (MPS-V scaling) — needs timing_scaling + checkpoints"
+	@echo "  make fig-scaling-bounds  render paper Fig 4 (error scaling) — needs scaling_theory CSVs"
+	@echo "  make fig-rare-event  render the rare-event advantage figure (paper Fig 8)"
 	@echo ""
 	@echo "  make notebook      launch the examples/tnwf_demo.ipynb demo notebook"
 	@echo ""
@@ -67,16 +71,12 @@ run-gmm3:
 	uv run python scripts/gmm_3d/run_all_methods.py
 
 # ── figures ───────────────────────────────────────────────────────────────
-# Locally reproducible from the runners above.
-fig1:
-	uv run python scripts/make_fig1_combined.py
-	uv run python scripts/make_fig1_concept.py
-
+# Paper Fig 2 (dense evolution). Locally reproducible from the runners above,
+# but see the README: it needs the *original* data/swiss_roll_2d/jam/seed0.pt,
+# not a retrained one. Paper Fig 1 is a TikZ figure built in the LaTeX source
+# and has no generator here.
 fig2:
 	uv run python scripts/make_fig2_dense_evolution.py
-	uv run python scripts/make_fig2_tensor_networks.py
-
-figs: fig1 fig2
 
 # Require the gmm_*_hp* HP-sweep data (cloud sweeps, not shipped — see README).
 fig3:
@@ -87,7 +87,28 @@ fig4:
 
 supp:
 	uv run python scripts/make_fig_supp_pareto.py
-	uv run python scripts/make_table3_pareto_configs.py
+
+# Table 1 (best-cell SW). Needs the gmm_*_hp sweeps unpacked at data/, plus the
+# tracked data/exact_sw_floor.json for the target--target row.
+table1:
+	uv run python scripts/make_table1_sw.py
+
+# Paper Table 2 (trained MPS-V scaling, d=8..32). Reads the 40 replicate traj.npz
+# under data/timing_scaling/wf_eval/ plus the four MPS-V oracles in
+# data/mps_v_checkpoints/. Recomputes the classical floor via torch (~70 s).
+table2:
+	uv run python scripts/make_table2_scaling.py
+
+# Paper Fig 4 (error scaling vs the bounds). Plots from the shipped
+# data/scaling_theory/ CSV cache; the compute half is not part of this release.
+fig-scaling-bounds:
+	uv run python scripts/make_fig_scaling_bounds.py
+
+# Rare-event advantage (paper Fig 8). Self-contained: the Table-2 K=160 MPS cores
+# ship in examples/rare_event/, so this needs no HP-sweep data. The script now
+# defaults to the paper's --tail-k 4.0, so no flag is needed here.
+fig-rare-event:
+	uv run python scripts/make_fig_rare_event.py --source paper
 
 # ── demo notebook ─────────────────────────────────────────────────────────
 notebook:
@@ -100,5 +121,17 @@ leaderboard:
 leaderboard-nll:
 	uv run python -m tnwf.leaderboard --metric nll_mean --print
 
+# Pipeline outputs land under data/<dataset>/<method>/ (run_evolution.py:879),
+# not results/ — only the leaderboard is written to results/.
+#
+# Scoped to the three datasets the runners regenerate, and to *.npz only. Do NOT
+# widen this to data/*/: that would delete the downloaded archive (the gmm_*_hp
+# sweeps, timing_scaling, scaling_theory) and the jam/*.pt checkpoints, none of
+# which can be regenerated from this repository.
+CLEAN_DATASETS := swiss_roll_2d gmm_2d gmm_3d
+
 clean-results:
-	rm -rf results/*/*/*.npz results/*/*/N*/seed*.npz results/leaderboard.{csv,md}
+	@for ds in $(CLEAN_DATASETS); do \
+	  rm -f data/$$ds/*/seed*.npz data/$$ds/*/N*_K*/seed*.npz; \
+	done
+	rm -f results/leaderboard.csv results/leaderboard.md
