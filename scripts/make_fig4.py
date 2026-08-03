@@ -20,16 +20,19 @@ import sys
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _hp_utils import (
-    METHOD_COLORS, METHOD_LABEL, METHOD_MARKERS,
-    collect, memory_fraction,
+    METHOD_COLORS,
+    METHOD_LABEL,
+    METHOD_MARKERS,
+    collect,
+    memory_fraction,
 )
-
 
 SCALING_METHODS = ["dense", "tci_tdvp1", "tci_tdvp2"]
 

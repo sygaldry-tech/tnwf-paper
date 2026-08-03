@@ -50,31 +50,3 @@ def sample_gaussian_mixture(
     data = np.vstack(chunks).astype(np.float32)
     rng.shuffle(data)
     return data
-
-
-def mode_coverage(
-    samples: np.ndarray,
-    d: int,
-    nmodes: int = 4,
-    std: float = 0.5,
-    scale: float = 3.0,
-    arrangement: str = "orthogonal",
-    radius_std: float = 2.0,
-) -> dict:
-    """Per-mode capture metric — fraction within radius_std·std of nearest centre."""
-    centers = gm_mode_centers(d=d, nmodes=nmodes, scale=scale, arrangement=arrangement)
-    K = centers.shape[0]
-    dists = np.linalg.norm(samples[:, None, :] - centers[None, :, :], axis=-1)
-    nearest = dists.argmin(axis=1)
-    nearest_dist = dists.min(axis=1)
-    captured = nearest_dist < radius_std * std
-    per_mode_count = np.bincount(nearest[captured], minlength=K)
-    n = samples.shape[0]
-    return {
-        "coverage_frac": float(captured.mean()),
-        "modes_hit": int((per_mode_count > 0).sum()),
-        "modes_well_hit": int((per_mode_count >= 0.05 * n).sum()),
-        "mean_nn_dist": float(nearest_dist.mean()),
-        "per_mode_count": per_mode_count,
-        "K": int(K),
-    }

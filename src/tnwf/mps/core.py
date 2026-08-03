@@ -15,7 +15,6 @@ import math
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # dense ↔ MPS
 # ---------------------------------------------------------------------------
@@ -188,16 +187,3 @@ def apply_K_step_mps(
         A_i = np.fft.ifft(A_r, axis=1)
         out.append(A_i * sign_1d[None, :, None])
     return out
-
-
-def eval_mps_at_indices(mps: list[np.ndarray], indices: np.ndarray) -> np.ndarray:
-    """Evaluate ψ(x) at integer multi-indices. indices: (n, d) int. Returns (n,) complex."""
-    d = len(mps)
-    n = indices.shape[0]
-    v = np.ones((n, 1), dtype=np.complex128)
-    for k in range(d):
-        A = mps[k]                                    # (D_L, N, D_R)
-        rows = A[:, indices[:, k], :]                 # (D_L, n, D_R)
-        rows = np.transpose(rows, (1, 0, 2))          # (n, D_L, D_R)
-        v = np.einsum("ni,nij->nj", v, rows)
-    return v[:, 0]

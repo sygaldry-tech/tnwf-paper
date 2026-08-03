@@ -8,8 +8,8 @@ import pytest
 
 from tnwf.dense.evolution import (
     apply_K_step,
-    apply_V_step,
     apply_product_formula,
+    apply_V_step,
     evolve_wavefunction_conservative,
     trotter_coefficients,
 )

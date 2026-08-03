@@ -1,7 +1,7 @@
 .PHONY: help sync test test-needle test-medium \
         jam-all jam-swiss jam-gmm2 jam-gmm3 \
         run-swiss run-gmm2 run-gmm3 \
-        fig1 fig2 fig3 fig4 figs supp notebook leaderboard leaderboard-nll clean-results \
+        fig2 fig3 fig4 supp notebook leaderboard leaderboard-nll clean-results \
         fig-rare-event table1 table2 fig-scaling-bounds
 
 help:
@@ -21,9 +21,7 @@ help:
 	@echo "  make run-gmm2      all methods × 10 seeds on gmm_2d"
 	@echo "  make run-gmm3      all methods × 10 seeds × N×K sweep on gmm_3d"
 	@echo ""
-	@echo "  make fig1          draft-only overview panels (paper Fig 1 is TikZ)"
-	@echo "  make fig2          render paper Fig 2 (dense evolution) + a draft-only panel"
-	@echo "  make figs          fig1 + fig2 (locally reproducible)"
+	@echo "  make fig2          render paper Fig 2 (dense evolution)"
 	@echo "  make fig3          render paper Fig 5 (t-SNE grid)  — needs gmm_*_hp sweeps"
 	@echo "  make fig4          render paper Fig 6 (cost scaling) — needs gmm_*_hp sweeps"
 	@echo "  make supp          render paper Fig S1              — needs gmm_*_hp sweeps"
@@ -73,22 +71,12 @@ run-gmm3:
 	uv run python scripts/gmm_3d/run_all_methods.py
 
 # ── figures ───────────────────────────────────────────────────────────────
-# Locally reproducible from the runners above.
-#
-# NB: fig1_overview / fig1_concept / fig2_tensor_networks are NOT used by the
-# submitted manuscript — Fig 1 is a TikZ figure built in the LaTeX source, and
-# the manuscript's Fig 2 is fig2_dense only. These generators are retained
-# because their output appears in earlier drafts; only `make_fig2_dense_evolution`
-# below feeds a current paper float. See the README float table.
-fig1:
-	uv run python scripts/make_fig1_combined.py
-	uv run python scripts/make_fig1_concept.py
-
+# Paper Fig 2 (dense evolution). Locally reproducible from the runners above,
+# but see the README: it needs the *original* data/swiss_roll_2d/jam/seed0.pt,
+# not a retrained one. Paper Fig 1 is a TikZ figure built in the LaTeX source
+# and has no generator here.
 fig2:
 	uv run python scripts/make_fig2_dense_evolution.py
-	uv run python scripts/make_fig2_tensor_networks.py
-
-figs: fig1 fig2
 
 # Require the gmm_*_hp* HP-sweep data (cloud sweeps, not shipped — see README).
 fig3:
@@ -133,5 +121,17 @@ leaderboard:
 leaderboard-nll:
 	uv run python -m tnwf.leaderboard --metric nll_mean --print
 
+# Pipeline outputs land under data/<dataset>/<method>/ (run_evolution.py:879),
+# not results/ — only the leaderboard is written to results/.
+#
+# Scoped to the three datasets the runners regenerate, and to *.npz only. Do NOT
+# widen this to data/*/: that would delete the downloaded archive (the gmm_*_hp
+# sweeps, timing_scaling, scaling_theory) and the jam/*.pt checkpoints, none of
+# which can be regenerated from this repository.
+CLEAN_DATASETS := swiss_roll_2d gmm_2d gmm_3d
+
 clean-results:
-	rm -rf results/*/*/*.npz results/*/*/N*/seed*.npz results/leaderboard.{csv,md}
+	@for ds in $(CLEAN_DATASETS); do \
+	  rm -f data/$$ds/*/seed*.npz data/$$ds/*/N*_K*/seed*.npz; \
+	done
+	rm -f results/leaderboard.csv results/leaderboard.md

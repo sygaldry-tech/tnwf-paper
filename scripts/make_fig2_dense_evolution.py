@@ -20,13 +20,16 @@ import argparse
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 
 from tnwf.dense.evolution import (
-    apply_K_step, apply_V_step, make_kinetic_eigenvalues,
+    apply_K_step,
+    apply_V_step,
+    make_kinetic_eigenvalues,
     trotter_coefficients,
 )
 from tnwf.grid import make_grid
@@ -165,7 +168,6 @@ def main():
     )
 
     # ── Layout: 3 colorbars (top) + 2 data rows × 6 cols ────────────
-    import matplotlib.gridspec as gridspec
     n_cols = len(snap_ts)
     fig = plt.figure(figsize=(2.0 * n_cols + 0.8, 6.2), dpi=300,
                      constrained_layout=True)

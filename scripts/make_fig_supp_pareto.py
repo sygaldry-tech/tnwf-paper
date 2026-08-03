@@ -22,14 +22,20 @@ import sys
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _hp_utils import (
-    METHOD_COLORS, METHOD_LABEL, METHOD_MARKERS,
-    WAVE_METHODS, best_classical_sw, collect, memory_fraction,
+    METHOD_COLORS,
+    METHOD_LABEL,
+    METHOD_MARKERS,
+    WAVE_METHODS,
+    best_classical_sw,
+    collect,
+    memory_fraction,
 )
 
 DATASETS = {

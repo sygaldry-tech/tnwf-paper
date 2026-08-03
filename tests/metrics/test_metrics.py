@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from tnwf.metrics import sliced_wasserstein, mmd_rbf, nll_from_density_grid, density_from_psi
+from tnwf.metrics import density_from_psi, mmd_rbf, nll_from_density_grid, sliced_wasserstein
 
 
 @pytest.mark.needle
