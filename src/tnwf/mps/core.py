@@ -98,7 +98,13 @@ def truncate_mps(
     for j in range(d - 1):
         D_L, N_loc, D_R_old = cores[j].shape
         mat = cores[j].reshape(D_L * N_loc, D_R_old)
-        U, S, Vh = np.linalg.svd(mat, full_matrices=False)
+        try:
+            U, S, Vh = np.linalg.svd(mat, full_matrices=False)
+        except np.linalg.LinAlgError:
+            # gesdd non-convergence on degenerate spectra — same failure mode
+            # as the 2-site theta SVD; reuse the tdvp fallback chain.
+            from tnwf.mps.tdvp import _robust_svd
+            U, S, Vh = _robust_svd(mat, full_matrices=False)
         if tol > 0.0 and S[0] > 0.0:
             D_keep = max(1, min(D_max, int((S > tol * S[0]).sum())))
         else:

@@ -1,6 +1,6 @@
 """Figure 3 of the paper: t-SNE overlays for d ∈ {3, 5, 7}.
 
-3 columns × 3 rows grid. Each column is one d. Rows: Exact / JAM / TCI+TDVP1.
+3 columns × 3 rows grid. Each column is one d. Rows: Exact / JAM / TCI+1TDVP.
 Each panel fits its own t-SNE on (target ∪ method_samples) so cluster
 structure is comparable WITHIN a panel; cross-panel coords are NOT comparable.
 
@@ -20,18 +20,24 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Colourblind-safe palette adapted from Wong (Nature Methods 2011).
-# Hex codes correspond to:
-#   target  - light neutral grey (background reference)
-#   Exact   - black                  (Wong "Black")
-#   JAM     - bluish-green / teal    (Wong "Bluish green" #009E73)
-#   TDVP1   - vermillion / orange-red (Wong "Vermillion"   #D55E00)
-# The pair (#009E73, #D55E00) is one of the strongest contrasts in
-# the Wong palette under deuteranomaly and protanopia simulations.
-COLOR_TARGET = "#cccccc"
-COLOR_EXACT  = "#000000"
-COLOR_JAM    = "#009E73"
-COLOR_TDVP1  = "#D55E00"
+# Magma ramp, matching the submitted figure and the rest of the paper's palette
+# (Fig 4 / fig_scaling_bounds uses magma at 0.18 / 0.40 / 0.76).
+#
+# This file previously carried a Wong/Okabe-Ito palette (grey #cccccc target,
+# black Exact, vermillion #D55E00 TDVP1) predating the manuscript's switch to
+# magma. That was the cause of the mismatch against the committed fig3_tsne.pdf:
+# the released script drew a stale palette, so the script needed correcting, not
+# the figure.
+#
+# Pinned as explicit triples rather than plt.cm.magma(f) calls: magma is a
+# 256-entry lookup table, so magma(f) is piecewise constant in f and a
+# "close enough" f silently lands on a neighbouring stop. These are LUT indices
+# 38 / 128 / 199, read back out of the committed figure, so they reproduce it
+# regardless of any future change to matplotlib's colormap data.
+COLOR_TARGET = (0.146785, 0.068738, 0.334011)   # magma 38/255 — first-drawn series
+COLOR_EXACT  = (0.716387, 0.214982, 0.475290)   # magma 128/255
+COLOR_TDVP1  = (0.992196, 0.587502, 0.406299)   # magma 199/255
+COLOR_JAM    = "#009E73"       # unused by this figure; kept for callers
 
 # Best (per-d, per-method) cells found by inspection.
 CELLS = {
@@ -80,7 +86,7 @@ def main():
 
     # 1 row x 3 cols: each panel overlays three sample sets via a single
     # joint t-SNE: "true" target reference, "Exact" independent target
-    # draw (noise floor), and TCI+TDVP1 generated samples.
+    # draw (noise floor), and TCI+1TDVP generated samples.
     fig, axes = plt.subplots(1, 3, figsize=(15, 5.5), dpi=300,
                               constrained_layout=True)
     fig.set_constrained_layout_pads(w_pad=0.20, h_pad=0.10)
@@ -106,7 +112,7 @@ def main():
         emb_tdvp1 = emb[n_t + n_e:]
 
         ax = axes[col_idx]
-        # Bottom layer: light-gray "true" target reference.
+        # Bottom layer: "true" target reference.
         ax.scatter(emb_true[:, 0], emb_true[:, 1], s=24, alpha=0.45,
                    c=COLOR_TARGET, edgecolors="none", label="True",
                    zorder=2)
@@ -114,9 +120,9 @@ def main():
         ax.scatter(emb_exact[:, 0], emb_exact[:, 1], s=20, alpha=0.65,
                    c=COLOR_EXACT, edgecolors="none", label="Exact",
                    zorder=3)
-        # Top layer: TCI+TDVP1 generated samples.
+        # Top layer: TCI+1TDVP generated samples.
         ax.scatter(emb_tdvp1[:, 0], emb_tdvp1[:, 1], s=20, alpha=0.65,
-                   c=COLOR_TDVP1, edgecolors="none", label="TCI+TDVP1",
+                   c=COLOR_TDVP1, edgecolors="none", label="TCI+1TDVP",
                    zorder=4)
 
         ax.set_xticks([]); ax.set_yticks([])
@@ -125,7 +131,7 @@ def main():
         xlim = ax.get_xlim(); ylim = ax.get_ylim()
         ax.set_ylim(ylim[0] - 0.18 * (ylim[1] - ylim[0]), ylim[1])
         ax.text(0.5, 0.035,
-                f"TCI+TDVP1 SW = {tdvp1['sw']:.3f}",
+                f"TCI+1TDVP SW = {tdvp1['sw']:.3f}",
                 transform=ax.transAxes, va="bottom", ha="center",
                 fontsize=17, color="black",
                 bbox=dict(boxstyle="round,pad=0.30", fc="white",
