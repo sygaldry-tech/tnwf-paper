@@ -12,7 +12,13 @@ authors:
   - given-names: TODO
     family-names: TODO
 repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
-license: "TODO"  # set once the outbound license is finalized
+license: MIT
+# The hyperparameter-sweep data this code consumes is archived separately.
+# TODO(author): replace with the real Zenodo DOI once the archive is uploaded.
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.XXXXXXX"
+#     description: "tnwf-paper data archive (hyperparameter sweeps, checkpoints)"
 preferred-citation:
   type: article
   title: "Scalable quantum simulation of continuous-time generative models via tensor networks"
