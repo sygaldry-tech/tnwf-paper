@@ -197,7 +197,91 @@ manuscript depends on reproducing it.** Left as-is with an explanatory comment.
 
 ## 3. Changes
 
-*(appended as the work proceeds)*
+### 3.1 `tnwf-paper` (this repository)
+
+**Ship the four missing paper-float generators** — addresses F1.
+
+Added `scripts/make_table1_sw.py`, `scripts/make_table2_scaling.py`,
+`scripts/make_fig_scaling_bounds.py`, `scripts/make_fig_rare_event.py`,
+`src/tnwf/qae.py`, `examples/rare_event/*.npz` (11 files) and
+`data/exact_sw_floor.json`, together with the `.gitignore` negations and
+`Makefile` targets they need. Committed the pending Fig 5 magma-palette fix and
+the `mps/core.py` `_robust_svd` fallback. Dropped
+`scripts/make_table3_pareto_configs.py` (its float is commented out at
+`si.tex:1283-1290`) and `licenses/THIRD_PARTY_LICENSES.md` (`uv.lock` is the
+authoritative dependency record; a hand-maintained restatement can only drift).
+
+**Dropped the QTT path** — addresses F2. The `method="qtt"` additions were never
+committed, so this required no revert: the working-tree diff was simply not
+carried forward. `src/tnwf/qtt/`, `tests/mps/test_qtt_layer.py` and
+`scripts/exploration/` remain gitignored on disk, untouched and unshipped.
+
+**Prune** — addresses F6, F7.
+
+| Removed | Lines | Reason |
+|---|---|---|
+| `src/tnwf/mps/tdvp_torch.py` + `tests/test_tdvp_torch_equiv.py` | 714 | Unreachable; the `device` plumbing in `vstep_tdvp.py` and `run_evolution.py` went with it |
+| `scripts/make_fig1_combined.py`, `make_fig1_concept.py`, `make_fig2_tensor_networks.py` | 501 | No manuscript float; `make fig1`/`figs` removed |
+| `mode_coverage`, `build_steps_from_V_fn`, `eval_mps_at_indices` | 63 | Zero callers |
+| `torchvision` (`pyproject.toml`) | — | Zero uses repo-wide |
+
+`metrics/__init__` stopped re-exporting `wasserstein_2` and `grid_pmf_indices`.
+Both **remain in their modules** — contrary to the initial finding they are not
+dead, being called internally by `wasserstein_2_subsampled` and
+`nll_from_density_grid` — but nothing outside the package consumed them.
+
+`make clean-results` was retargeted from `results/` to `data/` and explicitly
+scoped to the three regenerable datasets. The obvious fix — globbing `data/*/` —
+would have deleted the downloaded archive and the `jam/*.pt` checkpoints, neither
+of which this repository can regenerate. The `Makefile` now says so.
+
+Applied ruff's safe autofixes: the lint baseline drops from **102 findings to
+66**, all pre-existing and style-only (`E4`/`E7` plus the deliberate `E402` from
+the `sys.path.insert` idiom in the figure scripts).
+
+**Fig 8** — addresses F5. Emits `fig_rare_event_advantage.{pdf,png}` (the
+manuscript's filename) instead of `rare_event_master.*`, and `--tail-k` now
+defaults to the paper's `4.0` instead of `5.0`. Also removed five plotting
+passes that produce no manuscript float — three were called
+(`make_combined_figure`, `make_amplification_figure`,
+`make_sampling_tsne_figure`), two already had no callers at all
+(`make_tsne_figure`, `make_advantage_figure`). The script goes **866 → 526
+lines** and runs in **36 s instead of ~5 min**, because each removed pass fitted
+its own t-SNE. Fig 8's own chain is untouched.
+
+**License and documentation** — addresses F3, F4. `LICENSE` is MIT
+(© 2026 Sygaldry, Inc.); `CITATION.cff` sets `license: MIT`. `README.md` gains a
+concrete archive-download section (curl, sha256, `tar xzf` at the repo root) and
+drops the incorrect claim that `data/scaling_theory/` ships in the repository.
+
+`make_table2_scaling.py`'s literal `95%%` and stale generator name were **left
+alone** and annotated — see F11.
+
+### 3.2 `tnwf-data-release`
+
+- Deleted the three `.DS_Store` files (F8) and taught both `make_manifest.py`
+  (an `is_junk` filter) and the `archive` tar (`--exclude`) to skip
+  `.DS_Store` / `._*` / `Thumbs.db`. The filter has to exist in *both*: the
+  manifest is regenerated from `rglob`, so filtering only one of them
+  re-desynchronises them. `make archive` now also prints a junk-member count.
+- `make verify` passes again: **2,152 files re-hashed, payload matches**.
+- Rebuilt the archive. `tnwf-paper-data.tar.gz`, **158,855,577 B (151.5 MiB)**,
+  sha256 `baa5744f184dbae19136f5f68260eaed783332990ca05e6b1554217ed41cef86`,
+  2,154 members all rooted at `data/`, 0 stray, 0 junk.
+- Corrected the README (F9): file count 2078 → 2,152; removed the false "Tracked
+  here: …" claim (nothing in the directory has ever been committed); corrected
+  the `ck.pkl` description; documented the 24 empty sweep-config directories as
+  the record of cells that diverged or ran out of container memory.
+- **Kept `fetch/`** despite being byte-identical to `data/` (44 files, 0.9 MB).
+  It is the record of what came off the Modal volumes and what `make stage`
+  re-stages from; 0.9 MB is not worth losing that.
+
+### 3.3 `sn-article.tex` (left uncommitted — the user's own checkout)
+
+Rewrote the Data availability statement (F3). It previously claimed the data was
+on GitHub, which was untrue for the 155 MB archive. It now cites a Zenodo DOI for
+the archive and keeps GitHub for the code and the small in-repo inputs, with the
+DOI as a marked `10.5281/zenodo.XXXXXXX` placeholder.
 
 ---
 
@@ -209,4 +293,22 @@ manuscript depends on reproducing it.** Left as-is with an explanatory comment.
 
 ## 5. Release blockers
 
-*(appended)*
+Items only the authors can close.
+
+- [ ] **Upload `tnwf-paper-data.tar.gz` to Zenodo** and replace the
+      `10.5281/zenodo.XXXXXXX` placeholder in three places: `sn-article.tex`
+      (Data availability), `README.md` ("Getting the data archive"), and
+      `CITATION.cff` (the commented-out `identifiers:` block). Publish the
+      sha256 above alongside it.
+- [ ] **`CITATION.cff`**: author list, ORCIDs, affiliations, and the article DOI
+      are all still `TODO`.
+- [ ] **`sn-article.tex`**: the author/affiliation block (`:11-12`) and
+      acknowledgements (`:1138`) are still `TODO`.
+- [ ] **Confirm MIT** is the intended outbound license with whoever owns that
+      call at Sygaldry. It was applied on request during this review; every
+      dependency in `uv.lock` is BSD/Apache-family, so there is no inbound
+      conflict, but the decision is the company's.
+- [ ] **Decide whether `tnwf-data-release`'s docs get committed** to
+      `lab-nathan`. Today nothing there is tracked, which contradicts its own
+      README (now corrected to say so). The payload itself should stay out of
+      git regardless.
