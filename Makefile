@@ -105,10 +105,10 @@ fig-scaling-bounds:
 	uv run python scripts/make_fig_scaling_bounds.py
 
 # Rare-event advantage (paper Fig 8). Self-contained: the Table-2 K=160 MPS cores
-# ship in examples/rare_event/, so this needs no HP-sweep data. --tail-k 4.0 is the
-# paper's threshold (the script default is 5.0). Takes ~5 min (t-SNE embeddings).
+# ship in examples/rare_event/, so this needs no HP-sweep data. The script now
+# defaults to the paper's --tail-k 4.0, so no flag is needed here.
 fig-rare-event:
-	uv run python scripts/make_fig_rare_event.py --source paper --tail-k 4.0
+	uv run python scripts/make_fig_rare_event.py --source paper
 
 # ── demo notebook ─────────────────────────────────────────────────────────
 notebook:

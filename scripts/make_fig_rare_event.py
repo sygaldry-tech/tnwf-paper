@@ -26,14 +26,14 @@ Pipeline
    vs a classical Monte-Carlo baseline: Heisenberg slope -1 (MLQAE) vs -1/2 (MC).
 
 Deliverables (figures/)
-    rare_event_master.{png,pdf}  Fig. 8 of the paper (= figures/fig_rare_event_advantage.pdf).
-    rare_event_combined.{png,pdf}  4-panel expanded version.
-    amplitude_amplification.{png,pdf}, sampling_tsne.{png,pdf}, tsne_rare_events.{png,pdf}
-    rare_event_qae.npz           raw arrays + amplitudes + SW + slopes.
+    fig_rare_event_advantage.{png,pdf}  paper Fig. 8, exactly as included by the
+                                        manuscript.
+    rare_event_qae.npz                  raw arrays + amplitudes + SW + slopes;
+                                        backs the caption's slopes and counts.
 
 Run:
     make fig-rare-event
-    uv run python scripts/make_fig_rare_event.py [--tail-k 5.0] [--source paper|npz]
+    uv run python scripts/make_fig_rare_event.py [--tail-k 4.0] [--source paper|npz]
 """
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ L = 8.0                # domain edge; centred physical frame is [-L/2, L/2]^d
 DX = L / N
 SIGMA = 0.5            # GMM component std
 SCALE = 3.0            # mode separation (centres at +-SCALE on each axis)
-DEFAULT_TAIL_K = 5.0   # rare-event threshold in units of sigma
+DEFAULT_TAIL_K = 4.0   # rare-event threshold in units of sigma (the paper's value)
 N_WF = 4000            # total pooled WF Born samples
 N_TARGET = 4000        # target GMM samples
 SEED = 0
@@ -278,188 +278,6 @@ def mlqae_vs_mc_sweep(a_true, master_rng) -> dict:
 
 
 # ============================================================================
-# Stage 6a -- t-SNE figure
-# ============================================================================
-def make_tsne_figure(target, wf, tgt_lab, wf_lab, tail_k, a_star, a_wf, sw_stats, out_dir):
-    from sklearn.manifold import TSNE
-    tgt_nearest, tgt_dist, tgt_tail, tgt_res = tgt_lab
-    wf_nearest, wf_dist, wf_tail, wf_res = wf_lab
-
-    n_t = target.shape[0]
-    combo = np.vstack([target, wf])
-    print(f"[tsne] embedding {combo.shape[0]} points (d={D} -> 2)...", flush=True)
-    emb = TSNE(n_components=2, perplexity=30, init="pca",
-               random_state=SEED).fit_transform(combo)
-    emb_t, emb_w = emb[:n_t], emb[n_t:]
-
-    cmap = plt.get_cmap("tab20")
-    CORE_SIZE, RARE_SIZE, RES_SIZE = 40.0, 11.0, 22.0   # large core, small rare
-    CORE_ALPHA, RARE_ALPHA = 0.70, 1.0                  # high-contrast fills
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6.5), dpi=160,
-                             constrained_layout=True)
-
-    def _panel(ax, e, nearest, dist, tail, res, title):
-        col = cmap(nearest % 20)
-        core = (~res) & (~tail)
-        ax.scatter(e[core, 0], e[core, 1], s=CORE_SIZE, c=col[core],
-                   alpha=CORE_ALPHA, linewidths=0)
-        ax.scatter(e[tail, 0], e[tail, 1], s=RARE_SIZE, c=col[tail],
-                   alpha=RARE_ALPHA, edgecolors="black", linewidths=1.0)
-        ax.scatter(e[res, 0], e[res, 1], s=RES_SIZE, c="0.35", marker="x",
-                   alpha=0.95, linewidths=1.2)
-        ax.set_title(title, fontsize=12)
-        ax.set_xticks([]); ax.set_yticks([])
-
-    _panel(axes[0], emb_t, tgt_nearest, tgt_dist, tgt_tail, tgt_res, "Target GMM")
-    _panel(axes[1], emb_w, wf_nearest, wf_dist, wf_tail, wf_res, "V-MPS 2TDVP")
-
-    legend = [
-        Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="none", ms=10,
-               label="core"),
-        Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="black", ms=5,
-               label=f"rare (>{tail_k:g}σ)"),
-        Line2D([0], [0], marker="x", ls="", mec="0.35", ms=7,
-               label="residual"),
-    ]
-    axes[0].legend(handles=legend, loc="upper left", fontsize=9, framealpha=0.9)
-    fig.suptitle(f"d=8 GMM — rare events beyond {tail_k:g}σ", fontsize=13)
-    for ext in ("png", "pdf"):
-        p = os.path.join(out_dir, f"tsne_rare_events.{ext}")
-        fig.savefig(p, dpi=160, bbox_inches="tight")
-        print(f"[tsne] saved {p}", flush=True)
-    plt.close(fig)
-
-
-# ============================================================================
-# Combined figure: MLQAE/MC (top) + t-SNE panels (bottom), minimal text
-# ============================================================================
-def make_combined_figure(sweeps, target, wf, tgt_lab, wf_lab, tail_k, out_dir):
-    from sklearn.manifold import TSNE
-    tgt_nearest, tgt_dist, tgt_tail, tgt_res = tgt_lab
-    wf_nearest, wf_dist, wf_tail, wf_res = wf_lab
-    n_t = target.shape[0]
-    combo = np.vstack([target, wf])
-    print(f"[combined] embedding {combo.shape[0]} points (d={D} -> 2)...", flush=True)
-    emb = TSNE(n_components=2, perplexity=30, init="pca",
-               random_state=SEED).fit_transform(combo)
-    emb_t, emb_w = emb[:n_t], emb[n_t:]
-
-    cmap = plt.get_cmap("tab20")
-    CORE_SIZE, RARE_SIZE, RES_SIZE, CORE_ALPHA = 46.0, 13.0, 28.0, 0.70
-
-    fig = plt.figure(figsize=(13.5, 13.6), dpi=160, constrained_layout=True)
-    gs = fig.add_gridspec(2, 2, height_ratios=[0.9, 1.2], wspace=0.03)
-    ax_q = fig.add_subplot(gs[0, :])
-    ax_t = fig.add_subplot(gs[1, 0])
-    ax_w = fig.add_subplot(gs[1, 1])
-    fig.suptitle(f"d = 8 GMM — rare samples beyond {tail_k:g}σ", fontsize=20,
-                 fontweight="bold")
-
-    def _label(ax, txt):
-        ax.text(0.0, 1.02, txt, transform=ax.transAxes, fontsize=20,
-                fontweight="bold", va="bottom", ha="left")
-
-    # ---- (a) top: MLQAE vs classical MC (analytic a*) ----
-    c_q, c_c = "#3b0f70", "#8c8c8c"
-    s = sweeps["analytic a*"]
-    q, em, ec = s["queries"], s["mlqae_err"], s["mc_err"]
-    ax_q.loglog(q, em, "o-", color=c_q, lw=3.0, ms=10,
-                label=f"MLQAE  ({s['mlqae_slope']:+.2f})")
-    ax_q.loglog(q, ec, "s--", color=c_c, lw=2.6, ms=9, mfc="white",
-                label=f"Monte Carlo  ({s['mc_slope']:+.2f})")
-    qg = np.array([q[0], q[-1]])
-    ax_q.loglog(qg, em[0] * (qg / q[0]) ** -1.0, "-", color=c_q, lw=1, alpha=0.3)
-    ax_q.loglog(qg, ec[0] * (qg / q[0]) ** -0.5, "--", color=c_c, lw=1, alpha=0.4)
-    ax_q.set_xlabel(r"queries  $Q$", fontsize=19)
-    ax_q.set_ylabel(r"error  $|\hat a - a|$", fontsize=19)
-    ax_q.tick_params(labelsize=15)
-    ax_q.grid(True, which="both", alpha=0.3)
-    ax_q.legend(fontsize=18, loc="lower left")
-    ax_q.set_title("MLQAE vs classical Monte Carlo", fontsize=18)
-    _label(ax_q, "(a)")
-
-    # ---- (b,c) bottom: t-SNE panels (target | wavefunction) ----
-    def _panel(ax, e, nearest, dist, tail, res):
-        col = cmap(nearest % 20)
-        core = (~res) & (~tail)
-        ax.scatter(e[core, 0], e[core, 1], s=CORE_SIZE, c=col[core],
-                   alpha=CORE_ALPHA, linewidths=0)
-        ax.scatter(e[tail, 0], e[tail, 1], s=RARE_SIZE, c=col[tail], alpha=1.0,
-                   edgecolors="black", linewidths=1.0)
-        ax.scatter(e[res, 0], e[res, 1], s=RES_SIZE, c="0.35", marker="x",
-                   alpha=0.18, linewidths=1.1)
-        ax.set_xticks([]); ax.set_yticks([])
-
-    _panel(ax_t, emb_t, tgt_nearest, tgt_dist, tgt_tail, tgt_res)
-    _panel(ax_w, emb_w, wf_nearest, wf_dist, wf_tail, wf_res)
-    ax_t.set_title("Direct sampling", fontsize=18)
-    ax_w.set_title("V-MPS 2TDVP", fontsize=18)
-    _label(ax_t, "(b)")
-    _label(ax_w, "(c)")
-
-    legend = [
-        Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="none", ms=14,
-               label="modes"),
-        Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="black", ms=8,
-               label=f"rare samples (>{tail_k:g}σ)"),
-        Line2D([0], [0], marker="x", ls="", mec="0.6", ms=10, label="residual"),
-    ]
-    fig.legend(handles=legend, loc="outside lower center", ncol=3, fontsize=17,
-               framealpha=0.9)
-
-    for ext in ("png", "pdf"):
-        p = os.path.join(out_dir, f"rare_event_combined.{ext}")
-        fig.savefig(p, dpi=160)
-        print(f"[combined] saved {p}", flush=True)
-    plt.close(fig)
-
-
-# ============================================================================
-# Stage 6b -- merged MLQAE vs MC figure
-# ============================================================================
-def make_advantage_figure(sweeps, tail_k, out_dir):
-    """Simplified: MLQAE vs classical MC for the analytic rare-event probability a*."""
-    s = sweeps["analytic a*"]
-    q, em, ec = s["queries"], s["mlqae_err"], s["mc_err"]
-
-    fig, ax = plt.subplots(figsize=(7.8, 6.2), dpi=160, constrained_layout=True)
-    c_q, c_c = "#3b0f70", "#8c8c8c"
-
-    ax.loglog(q, em, "o-", color=c_q, lw=2.4, ms=7,
-              label=f"MLQAE  ({s['mlqae_slope']:+.2f})")
-    ax.loglog(q, ec, "s--", color=c_c, lw=2.0, ms=6, mfc="white",
-              label=f"Monte Carlo  ({s['mc_slope']:+.2f})")
-
-    # faint ideal-slope guides (-1 Heisenberg, -1/2 shot noise)
-    qg = np.array([q[0], q[-1]])
-    y_h = em[0] * (qg / q[0]) ** -1.0
-    y_s = ec[0] * (qg / q[0]) ** -0.5
-    ax.loglog(qg, y_h, "-", color=c_q, lw=1, alpha=0.3)
-    ax.loglog(qg, y_s, "--", color=c_c, lw=1, alpha=0.4)
-    # right margin to hold the slope labels, placed just inside the axis
-    ax.set_xlim(right=q[-1] * 1.7)
-    ax.annotate("−1", xy=(q[-1], y_h[-1]), xytext=(6, 0),
-                textcoords="offset points", ha="left", va="center",
-                fontsize=9, color=c_q, alpha=0.75)
-    ax.annotate("−1/2", xy=(q[-1], y_s[-1]), xytext=(6, 0),
-                textcoords="offset points", ha="left", va="center",
-                fontsize=9, color=c_c, alpha=0.85)
-
-    ax.set_xlabel(r"queries  $Q$")
-    ax.set_ylabel(r"error  $|\hat a - a|$")
-    ax.set_title(f"d=8 GMM rare event  (>{tail_k:g}σ,  a={_pct(s['a_true'])})",
-                 fontsize=11)
-    ax.grid(True, which="both", alpha=0.3)
-    ax.legend(fontsize=10, loc="lower left")
-    for ext in ("png", "pdf"):
-        p = os.path.join(out_dir, f"mlqae_vs_mc.{ext}")
-        fig.savefig(p, dpi=160, bbox_inches="tight")
-        print(f"[qae] saved {p}", flush=True)
-    plt.close(fig)
-
-
-# ============================================================================
 # Rare-event SAMPLING advantage: amplitude amplification vs rejection sampling
 # ============================================================================
 def _amp_params(a):
@@ -470,164 +288,6 @@ def _amp_params(a):
     k = max(int(round(np.pi / (4.0 * theta) - 0.5)), 0)
     P = float(np.sin((2 * k + 1) * theta) ** 2)
     return k, min(max(P, 1e-9), 1.0)
-
-
-def make_amplification_figure(out_dir, seed=0):
-    """Draw N rare samples: amplitude amplification O(1/sqrt p) vs rejection O(1/p).
-
-    Simulated with the exact Grover success model p_k = sin^2((2k+1)theta) (same
-    spirit as analysis/qae.py) -- no explicit circuit. Amplitude amplification
-    costs (2k*+1) oracle calls per prepared sample and succeeds w.p. P; classical
-    rejection costs 1 oracle call and succeeds w.p. p.
-    """
-    rng = np.random.default_rng(seed)
-    N_RARE, TRIALS = 200, 61
-    sigmas = np.array([3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0])
-    ps = chi2.sf(sigmas ** 2, df=D)
-
-    # (a) oracle calls PER rare sample vs rarity p
-    cost_cl, cost_qu = [], []
-    for a in ps:
-        k, P = _amp_params(a); cost = 2 * k + 1
-        cl = rng.negative_binomial(N_RARE, min(max(float(a), 1e-12), 1.0),
-                                   size=TRIALS) + N_RARE
-        qu = (rng.negative_binomial(N_RARE, P, size=TRIALS) + N_RARE) * cost
-        cost_cl.append(np.median(cl) / N_RARE)
-        cost_qu.append(np.median(qu) / N_RARE)
-    cost_cl = np.array(cost_cl); cost_qu = np.array(cost_qu)
-
-    # (b) rare-sample yield vs oracle-call budget at 4 sigma
-    a4 = float(chi2.sf(16.0, df=D)); k4, P4 = _amp_params(a4); cost4 = 2 * k4 + 1
-    budgets = np.geomspace(2e2, 1e5, 12)
-    yield_cl = np.array([np.median(rng.binomial(int(Q), a4, size=TRIALS))
-                         for Q in budgets])
-    yield_qu = np.array([np.median(rng.binomial(int(Q // cost4), P4, size=TRIALS))
-                         for Q in budgets])
-    ratio = (P4 / cost4) / a4
-
-    c_q, c_c = "#3b0f70", "#8c8c8c"
-    fig, (axa, axb) = plt.subplots(1, 2, figsize=(13.6, 5.7), dpi=160,
-                                   constrained_layout=True)
-
-    # (a) cost scaling
-    axa.loglog(ps, cost_cl, "s--", color=c_c, lw=2.4, ms=9, mfc="white",
-               label="rejection sampling")
-    axa.loglog(ps, cost_qu, "o-", color=c_q, lw=2.8, ms=9,
-               label="amplitude amplification")
-    axa.loglog(ps, cost_cl[0] * (ps / ps[0]) ** -1.0, "-", color=c_c, lw=1, alpha=0.35)
-    axa.loglog(ps, cost_qu[0] * (ps / ps[0]) ** -0.5, "-", color=c_q, lw=1, alpha=0.35)
-    axa.invert_xaxis()   # rarer to the right
-    axa.set_xlabel(r"rare-event probability  $p$", fontsize=17)
-    axa.set_ylabel("oracle calls / rare sample", fontsize=17)
-    axa.tick_params(labelsize=13)
-    axa.grid(True, which="both", alpha=0.3)
-    axa.legend(fontsize=14, loc="upper left")
-    axa.set_title(r"cost:  $\mathcal{O}(1/\sqrt{p})$  vs  $\mathcal{O}(1/p)$",
-                  fontsize=16)
-    axa.text(0.0, 1.02, "(a)", transform=axa.transAxes, fontsize=20,
-             fontweight="bold", va="bottom")
-
-    # (b) yield at fixed 4 sigma
-    axb.loglog(budgets, yield_cl, "s--", color=c_c, lw=2.4, ms=9, mfc="white",
-               label="rejection sampling")
-    axb.loglog(budgets, yield_qu, "o-", color=c_q, lw=2.8, ms=9,
-               label="amplitude amplification")
-    axb.set_xlabel(r"oracle calls  $Q$", fontsize=17)
-    axb.set_ylabel("rare samples collected", fontsize=17)
-    axb.tick_params(labelsize=13)
-    axb.grid(True, which="both", alpha=0.3)
-    axb.legend(fontsize=14, loc="upper left")
-    axb.set_title(f"yield at 4σ (p = {_pct(a4)}):  {ratio:.1f}× per call",
-                  fontsize=16)
-    axb.text(0.0, 1.02, "(b)", transform=axb.transAxes, fontsize=20,
-             fontweight="bold", va="bottom")
-
-    fig.suptitle("Rare-event sampling — amplitude amplification vs rejection",
-                 fontsize=19, fontweight="bold")
-    for ext in ("png", "pdf"):
-        p = os.path.join(out_dir, f"amplitude_amplification.{ext}")
-        fig.savefig(p, dpi=160)
-        print(f"[amp] saved {p}", flush=True)
-    plt.close(fig)
-    print(f"  [amp] 4σ p={a4:.4f}: k*={k4}, cost/shot={cost4}, "
-          f"yield {ratio:.1f}× per call; rarest 6σ p={ps[-1]:.1e} "
-          f"speedup {cost_cl[-1]/cost_qu[-1]:.0f}×", flush=True)
-
-
-# ============================================================================
-# t-SNE of the SAMPLING difference: rare samples harvested at a fixed budget
-# ============================================================================
-def make_sampling_tsne_figure(out_dir, seed=0, tail_k=4.0, budget=1000):
-    """Same oracle budget Q: rare samples collected by rejection vs amplification.
-
-    Both draw from the same tail distribution, so the panels differ only in the
-    NUMBER of rare samples harvested -- the O(1/p) vs O(1/sqrt p) advantage made
-    visible as point density around each mode.
-    """
-    from sklearn.manifold import TSNE
-    rng = np.random.default_rng(seed)
-    C = gm_mode_centers()
-
-    def nearest(x):
-        d = np.linalg.norm(x[:, None, :] - C[None], axis=-1)
-        return d.argmin(1), d.min(1)
-
-    core = sample_gaussian_mixture(1600, d=D, std=SIGMA, scale=SCALE,
-                                   arrangement="orthogonal", seed=7).astype(float)
-    core_near, _ = nearest(core)
-    big = sample_gaussian_mixture(60000, d=D, std=SIGMA, scale=SCALE,
-                                  arrangement="orthogonal", seed=11).astype(float)
-    bn, bd = nearest(big)
-    tmask = bd > tail_k * SIGMA
-    pool = big[tmask][:600]
-    pool_near = bn[tmask][:600]
-
-    a = float(chi2.sf(tail_k ** 2, D))
-    k, P = _amp_params(a); cost = 2 * k + 1
-    n_rej = min(int(round(budget * a)), len(pool))
-    n_amp = min(int(round(budget / cost * P)), len(pool))
-
-    combo = np.vstack([core, pool])
-    print(f"[samp-tsne] embedding {combo.shape[0]} points...", flush=True)
-    emb = TSNE(n_components=2, perplexity=30, init="pca",
-               random_state=seed).fit_transform(combo)
-    e_core, e_pool = emb[:len(core)], emb[len(core):]
-    cmap = plt.get_cmap("tab20")
-    idx_rej = rng.choice(len(pool), n_rej, replace=False)
-    idx_amp = rng.choice(len(pool), n_amp, replace=False)
-
-    fig, (axl, axr) = plt.subplots(1, 2, figsize=(13.5, 7.2), dpi=160,
-                                   constrained_layout=True)
-
-    def _panel(ax, idx, title, tag):
-        ax.scatter(e_core[:, 0], e_core[:, 1], s=34, c=cmap(core_near % 20),
-                   alpha=0.16, linewidths=0)
-        ax.scatter(e_pool[idx, 0], e_pool[idx, 1], s=52, c=cmap(pool_near[idx] % 20),
-                   alpha=1.0, edgecolors="black", linewidths=1.1)
-        ax.set_title(title, fontsize=17)
-        ax.set_xticks([]); ax.set_yticks([])
-        ax.text(0.015, 0.975, tag, transform=ax.transAxes, fontsize=20,
-                fontweight="bold", va="top", ha="left")
-
-    _panel(axl, idx_rej, f"Rejection sampling  —  {n_rej} rare samples", "(a)")
-    _panel(axr, idx_amp, f"Amplitude amplification  —  {n_amp} rare samples", "(b)")
-
-    legend = [
-        Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="none", ms=11,
-               label="bulk (modes)"),
-        Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="black", ms=9,
-               label=f"rare sample collected (>{tail_k:g}σ)"),
-    ]
-    fig.legend(handles=legend, loc="outside lower center", ncol=2, fontsize=16,
-               framealpha=0.9)
-    fig.suptitle(f"Fixed budget  Q = {budget} oracle calls  —  "
-                 f"{n_amp / max(n_rej, 1):.1f}× more rare samples via amplification",
-                 fontsize=17, fontweight="bold")
-    for ext in ("png", "pdf"):
-        p = os.path.join(out_dir, f"sampling_tsne.{ext}")
-        fig.savefig(p, dpi=160)
-        print(f"[samp-tsne] saved {p}", flush=True)
-    plt.close(fig)
 
 
 # ============================================================================
@@ -770,7 +430,7 @@ def make_master_figure(sweeps, out_dir, seed=0, tail_k=4.0):
     fig.legend(handles=legend, loc="lower center", bbox_to_anchor=(0.5, -0.09),
                ncol=2, fontsize=19, framealpha=0.9)
     for ext in ("png", "pdf"):
-        p = os.path.join(out_dir, f"rare_event_master.{ext}")
+        p = os.path.join(out_dir, f"fig_rare_event_advantage.{ext}")
         fig.savefig(p, dpi=160, bbox_inches="tight")
         print(f"[master] saved {p}", flush=True)
     plt.close(fig)
@@ -825,9 +485,6 @@ def main():
               f"MC slope={s['mc_slope']:+.3f}  final speedup={s['final_speedup']:.1f}x",
               flush=True)
 
-    make_combined_figure(sweeps, target, wf, tgt_lab, wf_lab, args.tail_k, OUT_DIR)
-    make_amplification_figure(OUT_DIR, args.seed)
-    make_sampling_tsne_figure(OUT_DIR, args.seed, args.tail_k)
     make_master_figure(sweeps, OUT_DIR, args.seed, args.tail_k)
 
     npz_path = os.path.join(OUT_DIR, "rare_event_qae.npz")
