@@ -219,11 +219,6 @@ sweep data one consumes; there are no draft-only generators. `figures/`,
 `results/` and the bulk of `data/` are generated or downloaded, and are not
 version-controlled — see the archive section above.
 
-[`STRUCTURE.md`](STRUCTURE.md) maps the package module by module, with the
-float-to-generator-to-data table and the current metrics. [`LOG.md`](LOG.md)
-records the pre-publication review: what was removed, why, and the float-by-float
-reproduction check.
-
 ## Dependencies & licenses
 
 Dependencies are pinned in [`uv.lock`](uv.lock), which records the exact
