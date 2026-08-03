@@ -17,7 +17,10 @@ __pycache__/
 # Anchored to the repo root so the src/tnwf/data and tests/data PACKAGES are
 # still tracked.
 /results/
-/data/
+# `/data/*` rather than `/data/` so a specific file can be re-included below;
+# git will not descend into a wholly excluded directory, so a negation under
+# `/data/` alone has no effect.
+/data/*
 /figures/
 /inputs/
 /logs/
@@ -34,6 +37,14 @@ __pycache__/
 !assets/**
 !examples/checkpoints/
 !examples/checkpoints/**
+# Table-2 (K=160, D_max=64) MPS cores backing the rare-event figure. Converted
+# from the original pickles to .npz so this repository ships no pickle payloads.
+!examples/rare_event/
+!examples/rare_event/**
+# Target--target finite-sample SW floor: a 1 KB required input for Table 1, not
+# bulk data. The sweeps it accompanies ship separately; this is small enough and
+# tied closely enough to the generator to live in the repo.
+!/data/exact_sw_floor.json
 
 # OS
 .DS_Store
@@ -45,3 +56,11 @@ __pycache__/
 
 # Local rare-event QAE bridge (separate workstream; internal paths, do not ship)
 scripts/gmm_8d_rare_event/
+
+# Local QTT / quantics workstream (separate workstream; do not ship).
+# The public release deliberately excludes the binary-folded QTT path — see the
+# NotImplementedError in src/tnwf/mps_v/model.py. Keep these untracked so that
+# exclusion stays true.
+src/tnwf/qtt/
+tests/mps/test_qtt_layer.py
+scripts/exploration/
