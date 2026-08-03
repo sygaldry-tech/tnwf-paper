@@ -287,7 +287,87 @@ DOI as a marked `10.5281/zenodo.XXXXXXX` placeholder.
 
 ## 4. Verification
 
-*(appended after the end-to-end reproduction run)*
+Run in `/Users/nxkodama/tnwf-paper-verify`, which was **deleted and rebuilt from
+scratch** — the previous contents were a stale July copy, not a clone.
+
+Procedure, exactly as a reader would follow the README:
+
+```sh
+git clone --branch <release-branch> https://github.com/sygaldry-tech/tnwf-paper.git repo
+cd repo
+shasum -a 256 tnwf-paper-data.tar.gz     # matched the published digest
+tar xzf tnwf-paper-data.tar.gz
+uv sync --extra dev
+uv run pytest -m "needle or medium"
+make fig2 fig-scaling-bounds fig3 fig4 supp table1 table2 fig-rare-event
+uv run python scripts/make_fig_gmm_ode.py
+```
+
+**The code leg is a genuine download** — a real `git clone` from GitHub, 96
+tracked files. **The data leg is not.** The archive is not yet on Zenodo, so it
+was copied from the staging directory and verified against the published sha256.
+The `curl` step in the README is therefore *untested*, and remains so until the
+upload happens.
+
+### Environment
+
+Fresh venv, Python 3.14.3, torch 2.11.0, resolved from the tracked `uv.lock`.
+`uv sync` succeeded with no manual intervention.
+
+### Tests
+
+**74 passed**, 0 failed, in 23.6 s.
+
+### Float-by-float reproduction
+
+PDFs are compared after normalising `/CreationDate`, `/ModDate` and `/ID`, which
+are the only fields that vary between runs. `.tex` files are compared byte-for-byte.
+
+| Float | Asset | Result | Bytes (new / manuscript) |
+|---|---|---|---|
+| Fig 2 | `fig2_dense.pdf` | content-identical | 517533 / 517533 |
+| Fig 3 | `fig_gmm_ode.pdf` | content-identical | 227852 / 227852 |
+| Fig 4 | `fig_scaling_bounds.pdf` | content-identical | 26368 / 26368 |
+| Fig 5 | `fig3_tsne.pdf` | content-identical | 88788 / 88788 |
+| Fig 6 | `fig4_cost_scaling.pdf` | content-identical | 26527 / 26527 |
+| Fig 8 | `fig_rare_event_advantage.pdf` | content-identical | 98235 / 98235 |
+| Fig S1 | `figS1_supp_pareto.pdf` | content-identical | 47079 / 47079 |
+| Table 1 | `table1_sw.tex` | **byte-identical** | 555 / 555 |
+| Table 2 | `table_scaling.tex` | **byte-identical** | 584 / 584 |
+
+**9 / 9 match.** Every file also matched the manuscript's copy in raw byte length
+before normalisation.
+
+### Manuscript numbers reproduced
+
+| Claim | Manuscript | This run |
+|---|---|---|
+| Table 1, TCI+1TDVP, d=2–8 | 0.127, 0.116, 0.123, 0.102, 0.123, 0.116, 0.132 | identical |
+| Table 2 SW$^{wf}_T$, d=8/12/16/32 | 0.0363±0.0027, 0.0341±0.0026, 0.0380±0.0020, 0.0306±0.0009 | 0.03629±0.00265, 0.03412±0.00259, 0.03802±0.00198, 0.03055±0.00088 |
+| Table 2 χ\*, d=8/12/16/32 | 5–20, 6–31, 6–19, 7–11 | identical |
+| Fig 8 tail amplitude $a_4$ | 4.24% | 4.24% |
+| Fig 8 MLQAE / MC slopes | −0.90 / −0.49 | −0.904 / −0.493 |
+
+### Release hygiene in the clone
+
+- Excluded workstreams are genuinely absent: no `src/tnwf/qtt/`, no
+  `tests/mps/test_qtt_layer.py`, no `scripts/exploration/`, no `tdvp_torch.py`,
+  no draft figure generators, no `licenses/`.
+- No `.pkl` / `.pickle` files are tracked.
+- Rendering every float leaves no tracked file modified.
+- `data/exact_sw_floor.json` survives the archive overlay (the tarball does not
+  clobber it).
+
+### Not verified
+
+- The Zenodo `curl` download (archive not yet uploaded).
+- Fig 7, Table S2, Fig S2–S5 — not reproducible from this release by design;
+  their cloud drivers and intermediate outputs were not preserved. The README
+  says so and that remains accurate.
+- Fig 4's underlying numbers: only the plotting half is released, so the figure
+  reproduces from the shipped CSV cache but its values are not re-derived.
+- The runner path (`make jam-*`, `make run-*`) end to end. It regenerates sweep
+  data rather than a float, and a full sweep is a cloud-scale job.
 
 ---
 
