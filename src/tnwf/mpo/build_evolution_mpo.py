@@ -40,48 +40,6 @@ def _chunked_oracle_eval(V_fn: Callable, x: np.ndarray, t: float) -> np.ndarray:
     return out
 
 
-def _cached_oracle_eval(
-    V_fn: Callable,
-    points: np.ndarray,
-    grid_1d: np.ndarray,
-    t: float,
-    cache: dict,
-) -> np.ndarray:
-    """Same output as ``_chunked_oracle_eval(V_fn, grid_1d[points], t)``, but
-    memoizes per-row results keyed by ``(t, tuple(int_idx))``.
-
-    Caching is at the row level so partial overlaps across calls reuse the
-    rows that were previously evaluated. Misses are batched into a single
-    chunked V_fn call to amortise the per-call overhead (PyTorch forward for
-    JAM V_fn, vectorised analytic for closed-form V_t).
-
-    Audit piece 4.1. Cache lifetime is the lifetime of the ``cache`` dict
-    object — typically the V-step closure's ``warm_state["V_cache"]`` so it
-    survives across K Trotter steps within a single ``run()``.
-    """
-    n = points.shape[0]
-    out = np.empty(n, dtype=np.float64)
-    # Walk points, collect misses; populate hits in-place.
-    miss_idx: list[int] = []
-    miss_keys: list[tuple] = []
-    for i in range(n):
-        key = (t, tuple(int(p) for p in points[i]))
-        cached = cache.get(key)
-        if cached is None:
-            miss_idx.append(i)
-            miss_keys.append(key)
-        else:
-            out[i] = cached
-    # Batched V_fn call on the miss rows.
-    if miss_idx:
-        miss_pts = grid_1d[points[miss_idx]]
-        miss_vals = _chunked_oracle_eval(V_fn, miss_pts, t)
-        for i, key, val in zip(miss_idx, miss_keys, miss_vals):
-            cache[key] = float(val)
-            out[i] = val
-    return out
-
-
 def build_V_mpo(
     V_fn: Callable,
     t: float,
@@ -93,22 +51,26 @@ def build_V_mpo(
     seed: int = 0,
     init_right_idx: list[np.ndarray] | None = None,
     return_right_idx: bool = False,
-    oracle_cache: dict | None = None,
 ) -> list[np.ndarray]:
     """Build bare V_t(x) MPO (real → complex). Used by TDVP V-steps.
 
     If ``init_right_idx`` is given, seeds the TT-cross MAXVOL search.
-    If ``oracle_cache`` is given, V_fn rows are memoized.
+
+    Note on cost: no shipped caller warm-starts the search
+    (``tnwf.mps.vstep_tdvp`` passes neither ``init_right_idx`` nor a reuse of
+    the previous step's index sets), so the cross is rebuilt cold on every
+    call -- four times per Trotter step, at identical ``t``. That uncached
+    cost is precisely the baseline the trained-MPS-V bypass is measured
+    against in Section 2.4, so it should be read as a comparison against the
+    cross as actually run, not against an optimally warm-started one. An
+    earlier row-level memo for ``V_fn`` lived here but no caller ever enabled
+    it, so it has been removed rather than left as dead weight.
     """
     grid_1d = _make_grid_1d(N, L)
 
-    if oracle_cache is None:
-        def oracle(points: np.ndarray) -> np.ndarray:
-            x = grid_1d[points]
-            return _chunked_oracle_eval(V_fn, x, t)
-    else:
-        def oracle(points: np.ndarray) -> np.ndarray:
-            return _cached_oracle_eval(V_fn, points, grid_1d, t, oracle_cache)
+    def oracle(points: np.ndarray) -> np.ndarray:
+        x = grid_1d[points]
+        return _chunked_oracle_eval(V_fn, x, t)
 
     result = tt_cross(
         oracle, N=N, d=d, D_max=D_max, n_sweeps=n_sweeps, seed=seed,

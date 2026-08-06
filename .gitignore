@@ -45,6 +45,10 @@ __pycache__/
 # bulk data. The sweeps it accompanies ship separately; this is small enough and
 # tied closely enough to the generator to live in the repo.
 !/data/exact_sw_floor.json
+# Coordinate-convention table for artifacts that carry no in-file stamp. Source,
+# not data: tnwf.coords reads it to decide whether a file's sample coordinates
+# still need the half-cell correction.
+!/data/COORD_CONVENTIONS.tsv
 
 # OS
 .DS_Store

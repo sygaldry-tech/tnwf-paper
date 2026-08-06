@@ -5,7 +5,9 @@ Implements the 8-step product formula from Layden et al. (2025) §3:
     W = e^{iβV} e^{iαK} e^{-iβV} e^{-iαK} e^{-iβV} e^{-iαK} e^{iβV} e^{iαK}
 
 where K = ½(SFD_K F†S†)^⊕d (pseudospectral kinetic) and V = diag(V_t(x_k)).
-αβ = Δt/2 ⇒ W ≈ exp(-iH^c Δt) with O(Δt^3) local error.
+αβ = Δt/2 ⇒ W ≈ exp(-iH^c Δt) with O(Δt^2) local error, hence
+global O(K^-1) over K = T/Δt steps -- the order quoted in Methods and
+measured in Fig. 4(b) (fit K^-0.94).
 
 K-step is applied via FFT in O(N^d log N); V-step is pointwise multiplication.
 """
@@ -72,7 +74,7 @@ def apply_product_formula(
     """8-step W = e^{iβV} e^{iαK} e^{-iβV} e^{-iαK} e^{-iβV} e^{-iαK} e^{iβV} e^{iαK}.
 
     Applied right-to-left: step 1 (e^{iαK}) acts on ψ first.
-    Local error O(Δt^3); unitary.
+    Local error O(Δt^2) per step, global O(K^-1); unitary.
     """
     if eigenvalues is None:
         eigenvalues = make_kinetic_eigenvalues(N, d, L)

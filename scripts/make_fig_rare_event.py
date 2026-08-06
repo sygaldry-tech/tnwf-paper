@@ -12,10 +12,12 @@ Pipeline
    pooled across the independent MPS-V initialisations (reps) the paper averages over.
    [--source npz falls back to the older, reduced K=40/D_max=16 trajectory npz.]
 
-   Note on SW: the paper reports the **unbiased** sliced-Wasserstein, i.e. with the
-   half-grid-cell (dx/2) sampling offset removed (`SW(x - dx/2, target)`); the raw/biased
-   SW is ~0.11. We report both. K=40 vs K=160 barely changes the biased SW (the flow is
-   Trotter-converged); the paper's low number is the unbiased estimator + D_max=64 headroom.
+   Note on SW: Born samples are dithered about the grid node (`tnwf.coords`), so the
+   coordinates returned here need no half-cell correction. Releases up to v1 dithered
+   to the right of the node, inflating SW to ~0.11; that convention is reconstructed
+   and printed alongside as `sw_legacy_v1` so the size of the correction stays visible.
+   K=40 vs K=160 barely changes SW (the flow is Trotter-converged); the paper's low
+   number is this estimator plus D_max=64 headroom.
 
 2. Rare-event tails: standard multivariate 3-sigma rule -- a sample is a tail event for its
    nearest mode k iff ||x - c_k|| > TAIL_K * sigma (Mahalanobis radius, isotropic). Samples
@@ -49,7 +51,9 @@ from scipy.stats import chi2
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
-from tnwf.data.gaussian_mixture import sample_gaussian_mixture  # noqa: E402,I001
+from tnwf import coords  # noqa: E402,I001
+from tnwf.data.gaussian_mixture import sample_gaussian_mixture  # noqa: E402
+from tnwf.metrics.sw import sliced_wasserstein as _sliced_wasserstein  # noqa: E402
 from tnwf.pipelines.run_evolution import sample_from_mps  # noqa: E402
 from tnwf.qae import classical_mc_estimate, mlqae_estimate  # noqa: E402
 
@@ -67,12 +71,11 @@ def sample_wf_coords_from_mps(mps, n, N, d, L, rng):
     """Born samples in the CENTRED physical frame [-L/2, L/2]^d.
 
     `tnwf.pipelines.run_evolution.sample_from_mps` returns grid-frame coordinates
-    in [0, L)^d -- see the docstrings of `tnwf.grid.make_grid` ("[0, L)^d") and
-    `sample_from_psi_grid` ("in [0, L)^d"). This module, like `gm_mode_centers`
-    below, works in the centred world frame, so the L/2 offset must be removed.
-    That is the same conversion the `--source npz` branch applies to
-    `samples_T` ("npz frame is [0, L); recentre"), and it matters: without it
-    every sample is displaced by L/2 and the tail labelling silently breaks.
+    spanning [-dx/2, L-dx/2)^d -- node-centred, see `tnwf.coords`. This module,
+    like `gm_mode_centers` below, works in the centred world frame, so the L/2
+    offset must be removed. That is the same conversion the `--source npz` branch
+    applies to `samples_T`, and it matters: without it every sample is displaced
+    by L/2 and the tail labelling silently breaks.
     """
     return sample_from_mps(mps, N=N, d=d, L=L, n=n, rng=rng) - L / 2.0
 
@@ -121,17 +124,15 @@ def gm_mode_centers() -> np.ndarray:
     return C
 
 
-def sliced_wasserstein(a, b, n_proj=200, seed=0) -> float:
-    """Paper's SW estimator (analysis/gmm_phase_rank_control.py)."""
-    rng = np.random.default_rng(seed)
-    projs = rng.normal(size=(n_proj, a.shape[1]))
-    projs /= np.linalg.norm(projs, axis=1, keepdims=True)
-    a_s = np.sort(a @ projs.T, axis=0)
-    b_s = np.sort(b @ projs.T, axis=0)
-    if a_s.shape[0] != b_s.shape[0]:
-        idx = np.linspace(0, b_s.shape[0] - 1, a_s.shape[0]).astype(int)
-        b_s = b_s[idx]
-    return float(np.mean(np.abs(a_s - b_s)))
+def sliced_wasserstein(a, b, n_proj=128, seed=0) -> float:
+    """The paper's SW estimator: `tnwf.metrics.sw` at 128 projections.
+
+    This module used to carry its own 200-projection copy that reconciled
+    unequal cloud sizes by interpolation rather than truncation, which made
+    its numbers quietly incomparable with the pipeline's.
+    """
+    return float(_sliced_wasserstein(a, b, n_projections=n_proj,
+                                     rng=np.random.default_rng(seed)))
 
 
 # ============================================================================
@@ -140,7 +141,8 @@ def sliced_wasserstein(a, b, n_proj=200, seed=0) -> float:
 def load_wf_samples(source: str, seed: int):
     """Return (wf, target, sw_stats) in the centred [-L/2, L/2]^d frame.
 
-    wf is already half-grid-cell corrected (x - dx/2), matching the paper's unbiased SW.
+    wf is on the node-centred convention (`tnwf.coords.CONV_CELL`) and needs no
+    further shift; `sw_stats` also reports what the v1 convention would give.
     """
     rng = np.random.default_rng(seed)
     target = sample_gaussian_mixture(
@@ -161,31 +163,37 @@ def load_wf_samples(source: str, seed: int):
             x = sample_wf_coords_from_mps(mps, per, N, D, L, rng)  # centred
             chunks.append(x)
             stored_unb.append(float(z["sw_unbiased_final"]))
-        wf_raw = np.vstack(chunks)[:N_WF]
-        rng.shuffle(wf_raw)
-        wf = wf_raw - DX / 2.0   # half-cell correction (matches paper unbiased SW)
-        sw_biased = sliced_wasserstein(wf_raw, target)
-        sw_unbiased = sliced_wasserstein(wf, target)
+        wf = np.vstack(chunks)[:N_WF]
+        rng.shuffle(wf)
+        # sample_from_mps dithers about the node (tnwf.coords.CONV_CELL), so
+        # these coordinates are already unbiased — no half-cell correction here.
+        # The v1 convention is reconstructed only to report the correction size.
+        sw = sliced_wasserstein(wf, target)
+        sw_legacy = sliced_wasserstein(wf + DX / 2.0, target)
         print(f"[load] paper Table-2 state: pooled {wf.shape[0]} Born samples over "
               f"{len(reps)} MPS-V reps (K=160, N={N}, D_max=64)", flush=True)
-        print(f"       SW biased={sw_biased:.4f}  SW unbiased={sw_unbiased:.4f}  "
-              f"(paper Table-2 per-rep unbiased mean={np.mean(stored_unb):.4f})",
+        print(f"       SW={sw:.4f}  (v1 half-cell convention would give "
+              f"{sw_legacy:.4f})  "
+              f"(paper Table-2 per-rep mean={np.mean(stored_unb):.4f})",
               flush=True)
-        sw_stats = dict(sw_biased=sw_biased, sw_unbiased=sw_unbiased,
+        sw_stats = dict(sw=sw, sw_legacy_v1=sw_legacy,
                         paper_unbiased_mean=float(np.mean(stored_unb)),
                         paper_unbiased_ci=float(1.96 * np.std(stored_unb)
                                                 / np.sqrt(len(stored_unb))),
                         n_reps=len(reps), K=160, D_max=64)
     elif source == "npz":
         d = np.load(NPZ_FALLBACK)
-        # npz frame is [0, L); recentre and half-cell correct
-        wf_raw = d["samples_T"].astype(np.float64) - L / 2.0
-        wf = wf_raw - DX / 2.0
-        sw_biased = sliced_wasserstein(wf_raw, target)
-        sw_unbiased = sliced_wasserstein(wf, target)
+        # This is a shipped v1 artifact, so its stored samples still carry the
+        # half-cell bias. coords.resolve_shift reads the convention from the
+        # sidecar table rather than hard-coding a subtraction here; it returns
+        # 0.0 once the file is ever regenerated under the current convention.
+        shift = coords.resolve_shift(d, DX, path=NPZ_FALLBACK)
+        wf = d["samples_T"].astype(np.float64) - L / 2.0 + shift
+        sw = sliced_wasserstein(wf, target)
+        sw_legacy = sliced_wasserstein(wf + DX / 2.0, target)
         print(f"[load] fallback npz (reduced K=40/D_max=16): {wf.shape[0]} samples; "
-              f"SW biased={sw_biased:.4f} unbiased={sw_unbiased:.4f}", flush=True)
-        sw_stats = dict(sw_biased=sw_biased, sw_unbiased=sw_unbiased,
+              f"SW={sw:.4f} (v1 convention {sw_legacy:.4f})", flush=True)
+        sw_stats = dict(sw=sw, sw_legacy_v1=sw_legacy,
                         paper_unbiased_mean=float("nan"),
                         paper_unbiased_ci=float("nan"), n_reps=1, K=40, D_max=16)
     else:
@@ -366,7 +374,21 @@ def _draw_amp_cost(ax, seed):
     ax.legend(fontsize=17, loc="upper right")
 
 
-def _draw_sampling_tsne(ax_l, ax_r, seed, tail_k, budget=1000):
+def _draw_sampling_tsne(ax_l, ax_r, wf, seed, tail_k, budget=1000):
+    """Embed the *prepared state's* Born samples and show the rare-sample yield.
+
+    Both point clouds are drawn from `wf`, the Born samples of the K=160 MPS-V
+    state loaded by `load_wf_samples`. Previously both were drawn from
+    `sample_gaussian_mixture`, so the panels compared the analytic target with
+    itself and no wavefunction data entered the figure at all — even though the
+    real cores were loaded and sampled a few lines earlier.
+
+    The yields are set by the analytic tail probability a*, matching panels
+    (a,b), so all four panels describe the same primitive at the same
+    rare-event rate. The prepared state's own tail fraction is a separate
+    measurement — it over-populates a* by about 2.2x — and is reported as a
+    number in the text rather than folded into this illustration.
+    """
     from sklearn.manifold import TSNE
     rng = np.random.default_rng(seed)
     C = gm_mode_centers()
@@ -375,15 +397,20 @@ def _draw_sampling_tsne(ax_l, ax_r, seed, tail_k, budget=1000):
         d = np.linalg.norm(x[:, None, :] - C[None], axis=-1)
         return d.argmin(1), d.min(1)
 
-    core = sample_gaussian_mixture(1600, d=D, std=SIGMA, scale=SCALE,
-                                   arrangement="orthogonal", seed=7).astype(float)
-    core_near, _ = nearest(core)
-    big = sample_gaussian_mixture(60000, d=D, std=SIGMA, scale=SCALE,
-                                  arrangement="orthogonal", seed=11).astype(float)
-    bn, bd = nearest(big)
-    tmask = bd > tail_k * SIGMA
-    pool = big[tmask][:600]; pool_near = bn[tmask][:600]
-    a = float(chi2.sf(tail_k ** 2, D)); k, P = _amp_params(a); cost = 2 * k + 1
+    wf = np.asarray(wf, dtype=float)
+    wf_near, wf_dist = nearest(wf)
+    tmask = wf_dist > tail_k * SIGMA
+    a = float(chi2.sf(tail_k ** 2, D))          # analytic a*, as in panels (a,b)
+
+    pool = wf[tmask][:600]
+    pool_near = wf_near[tmask][:600]
+    bulk_idx = np.flatnonzero(~tmask)
+    if len(bulk_idx) > 1600:
+        bulk_idx = rng.choice(bulk_idx, 1600, replace=False)
+    core = wf[bulk_idx]
+    core_near = wf_near[bulk_idx]
+
+    k, P = _amp_params(a); cost = 2 * k + 1
     n_rej = min(int(round(budget * a)), len(pool))
     n_amp = min(int(round(budget / cost * P)), len(pool))
     combo = np.vstack([core, pool])
@@ -405,10 +432,13 @@ def _draw_sampling_tsne(ax_l, ax_r, seed, tail_k, budget=1000):
 
     _panel(ax_l, idx_rej)
     _panel(ax_r, idx_amp)
+    print(f"[fig8cd] prepared-state Born samples: {len(core)} bulk + {int(tmask.sum())} "
+          f">{tail_k:g}sigma tail; at Q={budget} yields rejection={n_rej}, "
+          f"amplification={n_amp} ({n_amp/max(n_rej,1):.1f}x)", flush=True)
     return n_rej, n_amp
 
 
-def make_master_figure(sweeps, out_dir, seed=0, tail_k=4.0):
+def make_master_figure(sweeps, wf, out_dir, seed=0, tail_k=4.0):
     fig = plt.figure(figsize=(14.0, 13.4), dpi=160, constrained_layout=True)
     gs = fig.add_gridspec(2, 2, height_ratios=[0.95, 1.12])
     ax_est = fig.add_subplot(gs[0, 0])
@@ -418,7 +448,7 @@ def make_master_figure(sweeps, out_dir, seed=0, tail_k=4.0):
 
     _draw_estimation(ax_est, sweeps["analytic a*"]); _axtag(ax_est, "(a)")
     _draw_amp_cost(ax_amp, seed); _axtag(ax_amp, "(b)")
-    _draw_sampling_tsne(ax_rej, ax_aa, seed, tail_k); _axtag(ax_rej, "(c)", inside=True)
+    _draw_sampling_tsne(ax_rej, ax_aa, wf, seed, tail_k); _axtag(ax_rej, "(c)", inside=True)
     _axtag(ax_aa, "(d)", inside=True)
 
     legend = [
@@ -466,10 +496,12 @@ def main():
     print(f"  a_tgt (target GMM, genuine tail)             = {_pct(a_tgt)}  (n={target.shape[0]})")
     print(f"  a_wf  (V-MPS 2TDVP, genuine tail)            = {_pct(a_wf)}  (n={wf.shape[0]})")
     print(f"  residual (untransported): target={_pct(tgt_res.mean())}  WF={_pct(wf_res.mean())}")
-    print(f"  SW^wf_T: biased={sw['sw_biased']:.4f}  unbiased={sw['sw_unbiased']:.4f}"
+    print(f"  SW^wf_T: {sw['sw']:.4f}  (v1 convention: {sw['sw_legacy_v1']:.4f})"
           + (f"  (paper Table-2: {sw['paper_unbiased_mean']:.4f} ± "
              f"{sw['paper_unbiased_ci']:.4f}, n={sw['n_reps']})"
              if sw['n_reps'] > 1 else ""))
+    print(f"  tail over-population: a_wf/a* = {a_wf / a_star:.2f}x "
+          f"(target/a* = {a_tgt / a_star:.2f}x)")
 
     K = centers.shape[0]
     print(f"  per-mode rare counts (target): {np.bincount(tgt_lab[0][tgt_tail], minlength=K).tolist()}")
@@ -485,14 +517,14 @@ def main():
               f"MC slope={s['mc_slope']:+.3f}  final speedup={s['final_speedup']:.1f}x",
               flush=True)
 
-    make_master_figure(sweeps, OUT_DIR, args.seed, args.tail_k)
+    make_master_figure(sweeps, wf, OUT_DIR, args.seed, args.tail_k)
 
     npz_path = os.path.join(OUT_DIR, "rare_event_qae.npz")
     np.savez(
         npz_path,
         tail_k=args.tail_k, sigma=SIGMA, scale=SCALE, d=D, L=L, source=args.source,
         a_star=a_star, a_tgt=a_tgt, a_wf=a_wf,
-        sw_biased=sw["sw_biased"], sw_unbiased=sw["sw_unbiased"],
+        sw=sw["sw"], sw_legacy_v1=sw["sw_legacy_v1"],
         paper_unbiased_mean=sw["paper_unbiased_mean"],
         target=target.astype(np.float32), wf=wf.astype(np.float32),
         target_tail=tgt_tail, wf_tail=wf_tail,

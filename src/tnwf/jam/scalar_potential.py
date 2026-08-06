@@ -113,6 +113,27 @@ def sinkhorn_ot_pairs(
     return torch.from_numpy(col).long().to(x0.device)
 
 
+#: Canonical loss names, and the aliases accepted for backward compatibility.
+#:
+#: The paper calls the trained objective "JAM" (joint action matching) and the
+#: shipped Table 2 checkpoints record ``loss_fn='jam'``, but the CLI used to
+#: expose that same loss as ``cfm``, so four names were in circulation for one
+#: object ("action matching", "JAM", "cfm", and the ``_am_`` in the checkpoint
+#: filenames, which is a fixed template rather than a record of the loss).
+#: ``jam`` is now canonical; ``cfm`` still resolves to it.
+LOSS_ALIASES = {"jam": "jam", "cfm": "jam", "am": "am"}
+
+
+def normalize_loss_name(name: str) -> str:
+    """Map a loss name or legacy alias onto its canonical form."""
+    try:
+        return LOSS_ALIASES[str(name)]
+    except KeyError:
+        raise ValueError(
+            f"loss_name must be one of {sorted(set(LOSS_ALIASES))}, got {name!r}"
+        ) from None
+
+
 def jam_conservative_loss(
     model: ScalarPotentialMLP,
     x0: torch.Tensor,

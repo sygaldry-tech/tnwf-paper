@@ -57,7 +57,7 @@ def load_model(d):
         print(f"  [d{d}] missing checkpoint {p} — unpack the data archive at the "
               "repo root; the d-row will be emitted as '---'")
         return None, None
-    ck = torch.load(p, map_location="cpu", weights_only=False)
+    ck = torch.load(p, map_location="cpu", weights_only=True)
     a = ck["args"]; a = a if isinstance(a, dict) else vars(a)
     m = MPSScalarPotentialTimeSite(d=d, N=int(a["N_grid"]), D=int(a["D_mps"]),
                                    L=float(a.get("L", L)), N_t=int(a.get("N_t", 16)),

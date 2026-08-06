@@ -29,7 +29,7 @@ def load_mps_v(ckpt_path: str, device: str = "cpu"):
     training config). Returns ``(model, cfg)`` where ``cfg`` is a normalized
     dict exposing ``d, N, L, N_t, D, dataset, std, scale, arrangement``.
     """
-    ck = torch.load(ckpt_path, map_location=device, weights_only=False)
+    ck = torch.load(ckpt_path, map_location=device, weights_only=True)
     a = ck["args"]
     a = a if isinstance(a, dict) else vars(a)
 

@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 import matplotlib
@@ -40,21 +41,44 @@ COLOR_EXACT  = (0.716387, 0.214982, 0.475290)   # magma 128/255
 COLOR_TDVP1  = (0.992196, 0.587502, 0.406299)   # magma 199/255
 COLOR_JAM    = "#009E73"       # unused by this figure; kept for callers
 
-# Best (per-d, per-method) cells found by inspection.
-CELLS = {
-    3: {
-        "jam":       ("data/gmm_3d_hp_v2/jam/N32_K32",        1),
-        "tci_tdvp1": ("data/gmm_3d_hp_v2/tci_tdvp1/N64_K64_D16", 1),
-    },
-    5: {
-        "jam":       ("data/gmm_5d_hp/jam/N16_K64",           0),
-        "tci_tdvp1": ("data/gmm_5d_hp/tci_tdvp1/N32_K64_D16",  0),
-    },
-    7: {
-        "jam":       ("data/gmm_7d_hp/jam/N32_K64",           1),
-        "tci_tdvp1": ("data/gmm_7d_hp/tci_tdvp1/N32_K64_D32",  0),
-    },
-}
+# Which (cell, seed) each panel plots. Derived, not carried by hand: the argmin
+# moved when the half-cell sampling bias was corrected, so a constant copied
+# from a previous release would silently plot a run that is no longer the one
+# the panel claims to show.
+#
+# Note this is a per-*run* argmin (a single seed), whereas Table 1 reports the
+# best cell by seed-averaged SW. The two need not agree, and the annotated
+# value is the plotted run's own SW -- which is what the caption now says.
+DATASET_DIR = {3: "data/gmm_3d_hp_v2", 5: "data/gmm_5d_hp", 7: "data/gmm_7d_hp"}
+PANEL_METHODS = ("jam", "tci_tdvp1")
+_CELL_PATTERN = re.compile(r"^N(\d+)_K(\d+)(?:_D(\d+))?$")
+
+
+def derive_cells(dims=(3, 5, 7)) -> dict:
+    """Locate, per (d, method), the single run with the lowest endpoint SW."""
+    out: dict[int, dict] = {}
+    for d in dims:
+        out[d] = {}
+        for method in PANEL_METHODS:
+            base = Path(DATASET_DIR[d]) / method
+            best = None
+            for sub in (sorted(base.iterdir()) if base.exists() else []):
+                if not _CELL_PATTERN.match(sub.name):
+                    continue
+                for f in sorted(sub.glob("seed*.npz")):
+                    z = np.load(f, allow_pickle=True)
+                    if "sw_endpoint" not in z.files:
+                        raise SystemExit(
+                            f"{f} predates the node-centred coordinate "
+                            f"convention; run scripts/migrate_archive.py first.")
+                    sw = float(np.asarray(z["sw_endpoint"]))
+                    seed = int(f.stem.replace("seed", ""))
+                    if best is None or sw < best[0]:
+                        best = (sw, str(sub), seed)
+            if best is None:
+                raise SystemExit(f"no runs found for d={d} {method}")
+            out[d][method] = (best[1], best[2])
+    return out
 N_SHOW = 500
 
 
@@ -63,7 +87,7 @@ def _load(dir_path: Path, seed: int) -> dict:
     return {
         "samples_T": np.asarray(z["samples_T"]),
         "target":    np.asarray(z["target"]),
-        "sw":        float(np.asarray(z["sw"])[-1]),
+        "sw":        float(np.asarray(z["sw_endpoint"])),
         "N":         int(z["N"]),
         "K":         int(z["K"]),
     }
@@ -84,6 +108,10 @@ def main():
     args = p.parse_args()
 
     ds = [3, 5, 7]
+    CELLS = derive_cells(tuple(ds))
+    for d in ds:
+        for m, (dir_, seed) in CELLS[d].items():
+            print(f"[fig5] d={d} {m}: {dir_} seed{seed}")
 
     # 1 row x 3 cols: each panel overlays three sample sets via a single
     # joint t-SNE: "true" target reference, "Exact" independent target

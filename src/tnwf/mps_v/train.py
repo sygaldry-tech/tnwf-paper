@@ -19,7 +19,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from tnwf.jam.scalar_potential import action_matching_loss, jam_conservative_loss
+from tnwf.jam.scalar_potential import (action_matching_loss,
+                                        jam_conservative_loss,
+                                        normalize_loss_name)
 from tnwf.jam.train import DATASET_DEFAULTS, sample_target
 from tnwf.mps_v.model import MPSScalarPotentialTimeSite
 
@@ -37,7 +39,7 @@ def train(
     lr: float = 1e-3,
     d: int | None = None,
     L: float | None = None,
-    loss_name: str = "cfm",
+    loss_name: str = "jam",
     log_every: int = 1000,
 ) -> dict:
     """Train an MPS-V on an endpoint dataset and save a checkpoint to out_path.
@@ -47,8 +49,7 @@ def train(
     the centered frame, so the learned cores are centered (the V-step provider
     re-centers them to the [0, L) grid).
     """
-    if loss_name not in ("cfm", "am"):
-        raise ValueError(f"loss_name must be 'cfm' or 'am', got {loss_name!r}")
+    loss_name = normalize_loss_name(loss_name)
     cfg = dict(DATASET_DEFAULTS[dataset])
     if d is not None:
         cfg["d"] = d
@@ -79,7 +80,7 @@ def train(
         x0 = torch.randn(batch_size, d, device=device)
         t = torch.rand(batch_size, 1, device=device)
         opt.zero_grad()
-        if loss_name == "cfm":
+        if loss_name == "jam":
             loss = jam_conservative_loss(model, x0, x1, t)
         else:
             t_0 = torch.zeros(batch_size, 1, device=device)
@@ -121,7 +122,8 @@ def _main() -> None:
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--d", type=int, default=None)
     p.add_argument("--L", type=float, default=None)
-    p.add_argument("--loss_name", choices=["cfm", "am"], default="cfm")
+    # "cfm" is the legacy spelling of "jam"; both select jam_conservative_loss.
+    p.add_argument("--loss_name", choices=["jam", "cfm", "am"], default="jam")
     args = p.parse_args()
     train(
         dataset=args.dataset, seed=args.seed, out_path=args.out,
