@@ -50,11 +50,16 @@ def main() -> None:
     p.add_argument("--K", type=int, default=40, help="Trotter steps (160 for paper Table 2)")
     p.add_argument("--D_max", type=int, default=16, help="wavefunction MPS bond cap")
     p.add_argument("--n_samples", type=int, default=1500)
+    p.add_argument("--sigma", type=float, default=None,
+                   help="Gaussian source width. Default L/6, which is what the "
+                        "shipped MPS-V oracles were fit against; driving them "
+                        "from a different source costs a factor ~5 in SW.")
     p.add_argument("--out", required=True, help="output .npz path")
     a = p.parse_args()
 
     r = run(method="mps_v_tdvp2", dataset=a.dataset, mps_v_ckpt=a.ckpt,
-            K=a.K, n_samples=a.n_samples, method_kwargs={"D_max": a.D_max}, save=False)
+            K=a.K, n_samples=a.n_samples, sigma=a.sigma,
+            method_kwargs={"D_max": a.D_max}, save=False)
 
     L, N = float(r["L"]), int(r["N"])
     target = np.asarray(r["target"], dtype=np.float64)

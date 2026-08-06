@@ -446,6 +446,10 @@ def _run_jam(
         "d": d,
         "K": K,
         "L": L,
+        # JAM integrates particles from a standard normal latent (see the
+        # `rng.standard_normal` draw above), so its source width is 1.0 by
+        # construction rather than a configurable choice.
+        "sigma_0": 1.0,
         # Continuous ODE particles — never grid-binned, so already unbiased.
         coords.CONV_KEY: coords.CONV_CELL,
         coords.SCHEMA_KEY: coords.SCHEMA,
@@ -472,11 +476,33 @@ def _run_jam(
         savable = {k: v for k, v in out.items() if isinstance(v, np.ndarray)}
         # np.savez_compressed silently drops non-ndarray values, so every scalar
         # that must survive the round-trip is listed here explicitly.
-        for k in ("method", "dataset", "seed", "N", "d", "K", "L",
+        for k in ("method", "dataset", "seed", "N", "d", "K", "L", "sigma_0",
                   coords.CONV_KEY, coords.SCHEMA_KEY):
             savable[k] = np.asarray(out[k])
         np.savez_compressed(out_dir_path / f"seed{seed}.npz", **savable)
     return out
+
+
+#: Width of the Gaussian source psi_0 ~ N(L/2, sigma_0^2 I), by V-source family.
+#:
+#: These differ because the two families were run against different sources and
+#: a velocity oracle is only valid for the source it was fit against. The
+#: analytic-V hyperparameter sweeps used sigma_0 = 1.0. The trained MPS-V
+#: oracles were fit against sigma_0 = L/6; driving them from 1.0 instead costs a
+#: factor ~5 in endpoint SW (0.147 against 0.030 at d=8), and it is deterministic,
+#: so shipping the checkpoints does not rescue a caller who gets this wrong.
+#: L/6 puts the +-3 sigma_0 extent of the source at the box edge.
+SOURCE_SIGMA_ANALYTIC_V = 1.0
+SOURCE_SIGMA_TRAINED_MPS_V = 1.0 / 6.0   # multiplied by L
+
+
+def resolve_source_sigma(method: str, L: float, sigma: float | None) -> float:
+    """Width of the Gaussian source for `method`, unless explicitly overridden."""
+    if sigma is not None:
+        return float(sigma)
+    if str(method).startswith("mps_v"):
+        return SOURCE_SIGMA_TRAINED_MPS_V * float(L)
+    return SOURCE_SIGMA_ANALYTIC_V
 
 
 def run(
@@ -495,6 +521,7 @@ def run(
     method_kwargs: dict | None = None,
     snapshot_psi: bool = False,
     V_source: str = "jam",
+    sigma: float | None = None,
     mps_v_ckpt: str | None = None,
     checkpoint_path: str | Path | None = None,
     checkpoint_callback=None,
@@ -619,6 +646,9 @@ def run(
         target_traj = None
         target = sample_target_distribution(dataset, n_samples, seed=seed, d=d, L=L)
 
+    # ── Source width ─────────────────────────────────────────────────────
+    sigma_0 = resolve_source_sigma(method, L, sigma)
+
     # ── State initialisation ─────────────────────────────────────────────
     # For trajectory data we match the initial wave-function density to
     # ``q_{t=0}`` (the bio data's first snapshot) — matches the JAM grad-flow
@@ -633,14 +663,14 @@ def run(
             state = np.sqrt(rho).ravel().astype(np.complex128)
             state /= np.linalg.norm(state)
         else:
-            state = initial_psi_dense(N=N, d=d, L=L, sigma=1.0)
+            state = initial_psi_dense(N=N, d=d, L=L, sigma=sigma_0)
     else:
         if target_traj is not None and N**d <= 10_000_000:
             state = initial_psi_mps_from_samples(
                 target_traj[0], N=N, d=d, L=L, D_init=D_init,
             )
         else:
-            state = initial_psi_mps(N=N, d=d, L=L, sigma=1.0, D_init=D_init)
+            state = initial_psi_mps(N=N, d=d, L=L, sigma=sigma_0, D_init=D_init)
 
     # Build v_step dispatch
     v_step = _make_v_step(method, **method_kwargs)
@@ -810,6 +840,9 @@ def run(
         "d": d,
         "K": K,
         "L": L,
+        # Width of the Gaussian source. Recorded because it moves the endpoint
+        # SW by ~5x and was previously an undocumented hardcode.
+        "sigma_0": sigma_0,
         # Born samples dithered about the node — see tnwf.coords.
         coords.CONV_KEY: coords.CONV_CELL,
         coords.SCHEMA_KEY: coords.SCHEMA,
@@ -848,7 +881,7 @@ def run(
         savable = {k: v for k, v in out.items() if isinstance(v, np.ndarray)}
         # np.savez_compressed silently drops non-ndarray values, so every scalar
         # that must survive the round-trip is listed here explicitly.
-        for k in ("method", "dataset", "seed", "N", "d", "K", "L",
+        for k in ("method", "dataset", "seed", "N", "d", "K", "L", "sigma_0",
                   coords.CONV_KEY, coords.SCHEMA_KEY):
             savable[k] = np.asarray(out[k])
         np.savez_compressed(out_dir / f"seed{seed}.npz", **savable)

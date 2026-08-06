@@ -21,6 +21,7 @@ from tnwf.jam.scalar_potential import (
     ScalarPotentialMLP,
     action_matching_loss,
     jam_conservative_loss,
+    normalize_loss_name,
     sinkhorn_ot_pairs,
 )
 
@@ -83,9 +84,12 @@ def train(
     """Train V_t for one (dataset, seed) and save checkpoint to out_path.
 
     Args:
-        loss_name: ``"cfm"`` (default) uses :func:`jam_conservative_loss` —
+        loss_name: ``"jam"`` (default) uses :func:`jam_conservative_loss` —
             the Conditional Flow Matching loss restricted to gradient
-            velocity fields. ``"am"`` uses :func:`action_matching_loss` —
+            velocity fields, which is what the paper calls JAM and what the
+            shipped Table 2 checkpoints record as ``loss_fn='jam'``. Accepted
+            as ``"cfm"`` too, the name this option used to carry.
+            ``"am"`` uses :func:`action_matching_loss` —
             the variational Action Matching loss of Neklyudov et al. 2022,
             which matches marginals directly via boundary terms + time
             integral.
@@ -111,12 +115,11 @@ def train(
     if n_layers is None:      n_layers      = train_cfg.get("n_layers", 3)
     if time_embed_dim is None: time_embed_dim = train_cfg.get("time_embed_dim", 64)
     if lr is None:            lr            = train_cfg.get("lr", 1e-3)
-    if loss_name is None:     loss_name     = train_cfg.get("loss_name", "cfm")
+    if loss_name is None:     loss_name     = train_cfg.get("loss_name", "jam")
     if ot_coupling is None:   ot_coupling   = train_cfg.get("ot_coupling", False)
     if ot_epsilon is None:    ot_epsilon    = train_cfg.get("ot_epsilon", 0.05)
     if global_ot is None:     global_ot     = train_cfg.get("global_ot", False)
-    if loss_name not in ("cfm", "am"):
-        raise ValueError(f"loss_name must be 'cfm' or 'am', got {loss_name!r}")
+    loss_name = normalize_loss_name(loss_name)
     if d is not None:
         cfg["d"] = d
     if L is not None:
@@ -212,7 +215,7 @@ def train(
                         x1[mask] = x1_b
 
         opt.zero_grad()
-        if loss_name == "cfm":
+        if loss_name == "jam":
             loss = jam_conservative_loss(model, x0, x1, t)
         else:  # "am"
             loss = action_matching_loss(model, x0, x1, t, t_0, t_1)

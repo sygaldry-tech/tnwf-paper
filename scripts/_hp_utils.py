@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from tnwf.coords import CoordConventionError  # noqa: E402
 
 METHODS = ["jam", "dense", "tci_tdvp1", "tci_tdvp2"]
 WAVE_METHODS = ["dense", "tci_tdvp1", "tci_tdvp2"]
@@ -34,15 +38,41 @@ NK_PATTERN   = re.compile(r"^N(\d+)_K(\d+)$")
 
 
 def _safe_load(path: Path) -> dict | None:
-    """Open a seed*.npz; return None if it's mid-write or corrupted."""
+    """Open a seed*.npz; return None if it's mid-write or corrupted.
+
+    Reads `sw_endpoint`, the endpoint sliced-Wasserstein recomputed from
+    node-centred samples with a recorded projection seed (see
+    `scripts/migrate_archive.py`). A pre-migration archive raises rather than
+    silently supplying the half-cell-biased `sw`, which is the failure mode
+    that put two conventions into one paper.
+
+    Two timers are exposed. `time` is `total_time`, which brackets the whole
+    Trotter loop and so includes the per-step metric callback; `evolve_time`
+    sums `step_times` and covers the evolution alone. At d=2 the metric
+    callback is over 90% of `total_time`, which is enough to break monotonicity
+    in a cost-vs-dimension fit, so anything comparing methods on runtime wants
+    `evolve_time`.
+    """
     import zipfile
     try:
         z = np.load(path, allow_pickle=True)
+        if "sw_endpoint" not in z.files:
+            raise CoordConventionError(
+                f"{path} predates the node-centred coordinate convention. "
+                f"Its `sw` carries a half-cell sampling bias. Run "
+                f"`python scripts/migrate_archive.py --src <v1> --dst <v2>`."
+            )
+        step_times = (np.asarray(z["step_times"], dtype=float)
+                      if "step_times" in z.files else None)
         out = {
-            "sw":   float(z["sw"][-1]),
-            "mmd":  float(z["mmd"][-1]),
+            "sw":   float(np.asarray(z["sw_endpoint"])),
+            "mmd":  float(np.asarray(z["mmd_endpoint"])),
+            "sw_mc_std": (float(np.asarray(z["sw_endpoint_mc_std"]))
+                          if "sw_endpoint_mc_std" in z.files else float("nan")),
             "chi":  int(np.asarray(z["chi_max"]).max()) if "chi_max" in z.files else 0,
             "time": float(np.asarray(z["total_time"])) if "total_time" in z.files else float("nan"),
+            "evolve_time": (float(step_times.sum()) if step_times is not None
+                            and step_times.size else float("nan")),
             "d":    int(np.asarray(z["d"])) if "d" in z.files else 0,
         }
         return out
@@ -66,7 +96,7 @@ def collect(results_dir: Path, method: str) -> list[dict]:
         if not m:
             continue
         N, K, D = int(m.group(1)), int(m.group(2)), int(m.group(3))
-        sw, mmd, chi, time_seeds = [], [], [], []
+        sw, mmd, chi, time_seeds, evolve_seeds, mc_std = [], [], [], [], [], []
         for f in sorted(sub.glob("seed*.npz")):
             rec = _safe_load(f)
             if rec is None:
@@ -74,15 +104,25 @@ def collect(results_dir: Path, method: str) -> list[dict]:
             sw.append(rec["sw"])
             mmd.append(rec["mmd"])
             chi.append(rec["chi"])
+            mc_std.append(rec["sw_mc_std"])
             if not np.isnan(rec["time"]):
                 time_seeds.append(rec["time"])
+            if not np.isnan(rec["evolve_time"]):
+                evolve_seeds.append(rec["evolve_time"])
         if sw:
             rows.append({
                 "N": N, "K": K, "D": D,
                 "sw": float(np.mean(sw)),
+                # Spread across seeds within the cell. Reported alongside the
+                # best cell because cells cluster tightly near the minimum, so
+                # a bare argmin over ~35 of them is selection on noise.
+                "sw_std": float(np.std(sw)) if len(sw) > 1 else float("nan"),
+                "sw_mc_std": float(np.nanmean(mc_std)) if mc_std else float("nan"),
                 "mmd": float(np.mean(mmd)),
                 "chi": float(np.mean(chi)),
                 "time": float(np.mean(time_seeds)) if time_seeds else float("nan"),
+                "evolve_time": (float(np.mean(evolve_seeds)) if evolve_seeds
+                                else float("nan")),
                 "n_seeds": len(sw),
             })
     return rows
@@ -111,16 +151,22 @@ def collect_reference(results_dir: Path, method: str) -> list[dict]:
             rec = _safe_load(f)
             if rec is None:
                 continue
-            d = bins.setdefault((N, K), {"sw": [], "mmd": [], "time": []})
+            d = bins.setdefault((N, K), {"sw": [], "mmd": [], "time": [],
+                                         "evolve_time": []})
             d["sw"].append(rec["sw"])
             d["mmd"].append(rec["mmd"])
             if not np.isnan(rec["time"]):
                 d["time"].append(rec["time"])
+            if not np.isnan(rec["evolve_time"]):
+                d["evolve_time"].append(rec["evolve_time"])
     return [
         {"N": N, "K": K,
          "sw":   float(np.mean(d["sw"])),
+         "sw_std": float(np.std(d["sw"])) if len(d["sw"]) > 1 else float("nan"),
          "mmd":  float(np.mean(d["mmd"])),
          "time": float(np.mean(d["time"])) if d["time"] else float("nan"),
+         "evolve_time": (float(np.mean(d["evolve_time"])) if d["evolve_time"]
+                         else float("nan")),
          "n_seeds": len(d["sw"])}
         for (N, K), d in bins.items()
     ]
