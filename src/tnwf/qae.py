@@ -13,7 +13,7 @@ Monte Carlo gives slope -1/2 on the same axes.
 This module is a numpy *simulation* of MLQAE. We don't build a real
 quantum circuit; instead we model the (Grover-amplified) outcome
 probability `p_k = sin²((2k+1)θ)` exactly and draw Bernoulli samples.
-This is the right thing to do for Spike A — we're testing whether the
+This is the right thing to do for the rare-event study — we're testing whether the
 algorithm achieves its claimed scaling on a synthetic state, not
 benchmarking circuit-level depth.
 

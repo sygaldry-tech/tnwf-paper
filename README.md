@@ -148,7 +148,7 @@ separately with a DOI:
 cd tnwf-paper
 curl -L -o tnwf-paper-data.tar.gz "https://zenodo.org/records/XXXXXXX/files/tnwf-paper-data.tar.gz"
 
-# Verify before unpacking (expected digest is published with the archive):
+# Compare against the checksum shown on the Zenodo record page:
 shasum -a 256 tnwf-paper-data.tar.gz
 
 # Unpack AT THE REPO ROOT — every member is rooted at data/, and several
@@ -167,7 +167,9 @@ data/
 ```
 
 The archive also carries a `MANIFEST.tsv` recording every file's size and
-sha256. `data/exact_sw_floor.json` (Table 1's target–target row) is small enough
+sha256; `make verify-data` checks the unpacked tree against it. (The manifest
+travels inside the archive, so that establishes internal consistency, not
+provenance — for provenance use the tarball checksum above.) `data/exact_sw_floor.json` (Table 1's target–target row) is small enough
 to live in this repository and is already present.
 
 With the archive unpacked, every reproducible float renders:

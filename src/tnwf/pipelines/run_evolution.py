@@ -240,9 +240,10 @@ def _product_formula_step(
     one 8-step BCH product formula. To reduce Trotter error, split the
     outer Δt into ``n_substeps`` equal sub-intervals, each running the
     8-step formula with rescaled coefficients α' = α/√n, β' = β/√n so
-    α'β' = αβ/n = Δt/(2n). Per-substep BCH error is O((αβ/n)^{3/2}); the
-    total error over n substeps is O(n · (αβ/n)^{3/2}) = O((αβ)^{3/2}/√n),
-    so doubling n cuts the error by ~√2.
+    α'β' = αβ/n = Δt/(2n). The formula is second-order accurate per step,
+    so the global error over K = T/Δt steps is O(K^-1) -- the order quoted in
+    Methods and measured in Fig. 4(b) (fit K^-0.94). Splitting a step into n
+    substeps reduces the local error by the same second-order factor.
     """
     if n_substeps <= 1:
         a, b = alpha, beta
@@ -648,7 +649,7 @@ def run(
     # Re-canonicalise the MPS after each Trotter step to clean up gauge drift
     # from bond-cap-saturated SVD truncation. Without this, at D=64 (chi cap)
     # the truncation residual compounds across 4–5 steps and SW jumps from
-    # 0.27 → 1.16 (verified on the A100 g=2 N=64 K=8 diagnostic, 2026-05-18).
+    # 0.27 → 1.16 on a g=2, N=64, K=8 diagnostic.
     # right_canonicalize is a pure-gauge transformation: preserves the state,
     # restores right-isometric form, ~one QR sweep — cheap vs the V-step.
     # Skipped for dense pipelines (no MPS).

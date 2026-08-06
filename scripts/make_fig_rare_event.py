@@ -53,6 +53,7 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 from tnwf import coords  # noqa: E402,I001
 from tnwf.data.gaussian_mixture import sample_gaussian_mixture  # noqa: E402
+from tnwf.metrics.sw import sliced_wasserstein as _sliced_wasserstein  # noqa: E402
 from tnwf.pipelines.run_evolution import sample_from_mps  # noqa: E402
 from tnwf.qae import classical_mc_estimate, mlqae_estimate  # noqa: E402
 
@@ -123,17 +124,15 @@ def gm_mode_centers() -> np.ndarray:
     return C
 
 
-def sliced_wasserstein(a, b, n_proj=200, seed=0) -> float:
-    """Paper's SW estimator (analysis/gmm_phase_rank_control.py)."""
-    rng = np.random.default_rng(seed)
-    projs = rng.normal(size=(n_proj, a.shape[1]))
-    projs /= np.linalg.norm(projs, axis=1, keepdims=True)
-    a_s = np.sort(a @ projs.T, axis=0)
-    b_s = np.sort(b @ projs.T, axis=0)
-    if a_s.shape[0] != b_s.shape[0]:
-        idx = np.linspace(0, b_s.shape[0] - 1, a_s.shape[0]).astype(int)
-        b_s = b_s[idx]
-    return float(np.mean(np.abs(a_s - b_s)))
+def sliced_wasserstein(a, b, n_proj=128, seed=0) -> float:
+    """The paper's SW estimator: `tnwf.metrics.sw` at 128 projections.
+
+    This module used to carry its own 200-projection copy that reconciled
+    unequal cloud sizes by interpolation rather than truncation, which made
+    its numbers quietly incomparable with the pipeline's.
+    """
+    return float(_sliced_wasserstein(a, b, n_projections=n_proj,
+                                     rng=np.random.default_rng(seed)))
 
 
 # ============================================================================

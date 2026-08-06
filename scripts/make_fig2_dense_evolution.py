@@ -102,7 +102,7 @@ def evolve_dense_with_snapshots(dataset: str, N: int, K: int,
 def _build_cb_cyclic_cmap() -> mcolors.ListedColormap:
     """Wong colorblind-safe 4-anchor cyclic colormap, identical to
     `_build_cyclic_colormap("cb_cyclic")` in
-    `the research prototype's analysis/wf_visualize.py`. The source PNG uses this."""
+    the phase-to-hue mapping used for the source PNG."""
     blue   = [  0/255, 114/255, 178/255]
     sky    = [ 86/255, 180/255, 233/255]
     orange = [230/255, 159/255,   0/255]
@@ -120,7 +120,7 @@ _CB_CYCLIC = _build_cb_cyclic_cmap()
 
 def complex_to_rgb(psi: np.ndarray) -> np.ndarray:
     """Light-background phase + amplitude visualisation matching
-    `wf_visualize.py::psi_to_hsv_rgba(dark_bg=False, colormap="cb_cyclic")`:
+    psi_to_hsv_rgba(dark_bg=False, colormap="cb_cyclic"):
 
         a   = |psi| / max|psi|                # amplitude weight
         rgb = (1 - a) * white + a * cb_cyclic(arg(psi))
@@ -178,7 +178,7 @@ def main():
 
     pmf_cmap = "Oranges"
 
-    # ── Top-row colorbars (match wf_visualize.py source-PNG style) ───
+    # ── Top-row colorbars (match the source-PNG style) ───────────────
     cax_phase = fig.add_subplot(cbar_gs[0])
     cax_amp   = fig.add_subplot(cbar_gs[1])
     cax_pmf   = fig.add_subplot(cbar_gs[2])

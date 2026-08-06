@@ -5,7 +5,7 @@ abstract: >-
   Reproduction code for "Scalable quantum simulation of continuous-time generative models
   via tensor networks": compressing the position-diagonal
   V-step of a wavefunction-flow evolution with tensor-network methods
-  (TCI/ACI + TDVP).
+  (TCI + TDVP).
 type: software
 authors:
   # TODO(author): fill in the full author list, ORCIDs, and affiliations.

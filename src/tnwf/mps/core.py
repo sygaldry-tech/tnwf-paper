@@ -126,7 +126,9 @@ def truncate_mps(
 
 
 # ---------------------------------------------------------------------------
-# Autoregressive sampling on a left-canonical MPS
+# Autoregressive sampling on a RIGHT-canonical MPS
+# (right-canonical is required: the running left-context vector's norm is
+#  only the correct conditional when the remaining sites are isometric)
 # ---------------------------------------------------------------------------
 
 def sample_mps_indices(

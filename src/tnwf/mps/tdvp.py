@@ -5,7 +5,7 @@ onto the MPS tangent manifold. Exploits the block-diagonal structure of the
 effective Hamiltonian for ~N⁴× speedup vs a generic-MPO TDVP.
 
 Reference: Haegeman et al., Phys. Rev. B 94, 165116 (2016).
-Numpy-only port of the research prototype's wavefunction/tdvp.py (drops ThreadPool, simpler).
+Numpy-only TDVP port (no ThreadPool).
 """
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-.PHONY: help sync test test-needle test-medium \
+.PHONY: verify-data exact-sw-floor help sync test test-needle test-medium \
         jam-all jam-swiss jam-gmm2 jam-gmm3 \
         run-swiss run-gmm2 run-gmm3 \
         fig2 fig3 fig4 supp notebook leaderboard leaderboard-nll clean-results \
@@ -90,6 +90,12 @@ supp:
 
 # Table 1 (best-cell SW). Needs the gmm_*_hp sweeps unpacked at data/, plus the
 # tracked data/exact_sw_floor.json for the target--target row.
+verify-data:            ## check the unpacked data archive against its MANIFEST.tsv
+	uv run python scripts/verify_data.py
+
+exact-sw-floor:         ## regenerate data/exact_sw_floor.json (Table 1 reference row)
+	uv run python scripts/compute_exact_sw_floor.py
+
 table1:
 	uv run python scripts/make_table1_sw.py
 
