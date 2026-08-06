@@ -375,7 +375,21 @@ def _draw_amp_cost(ax, seed):
     ax.legend(fontsize=17, loc="upper right")
 
 
-def _draw_sampling_tsne(ax_l, ax_r, seed, tail_k, budget=1000):
+def _draw_sampling_tsne(ax_l, ax_r, wf, seed, tail_k, budget=1000):
+    """Embed the *prepared state's* Born samples and show the rare-sample yield.
+
+    Both point clouds are drawn from `wf`, the Born samples of the K=160 MPS-V
+    state loaded by `load_wf_samples`. Previously both were drawn from
+    `sample_gaussian_mixture`, so the panels compared the analytic target with
+    itself and no wavefunction data entered the figure at all — even though the
+    real cores were loaded and sampled a few lines earlier.
+
+    The yields are set by the analytic tail probability a*, matching panels
+    (a,b), so all four panels describe the same primitive at the same
+    rare-event rate. The prepared state's own tail fraction is a separate
+    measurement — it over-populates a* by about 2.2x — and is reported as a
+    number in the text rather than folded into this illustration.
+    """
     from sklearn.manifold import TSNE
     rng = np.random.default_rng(seed)
     C = gm_mode_centers()
@@ -384,15 +398,20 @@ def _draw_sampling_tsne(ax_l, ax_r, seed, tail_k, budget=1000):
         d = np.linalg.norm(x[:, None, :] - C[None], axis=-1)
         return d.argmin(1), d.min(1)
 
-    core = sample_gaussian_mixture(1600, d=D, std=SIGMA, scale=SCALE,
-                                   arrangement="orthogonal", seed=7).astype(float)
-    core_near, _ = nearest(core)
-    big = sample_gaussian_mixture(60000, d=D, std=SIGMA, scale=SCALE,
-                                  arrangement="orthogonal", seed=11).astype(float)
-    bn, bd = nearest(big)
-    tmask = bd > tail_k * SIGMA
-    pool = big[tmask][:600]; pool_near = bn[tmask][:600]
-    a = float(chi2.sf(tail_k ** 2, D)); k, P = _amp_params(a); cost = 2 * k + 1
+    wf = np.asarray(wf, dtype=float)
+    wf_near, wf_dist = nearest(wf)
+    tmask = wf_dist > tail_k * SIGMA
+    a = float(chi2.sf(tail_k ** 2, D))          # analytic a*, as in panels (a,b)
+
+    pool = wf[tmask][:600]
+    pool_near = wf_near[tmask][:600]
+    bulk_idx = np.flatnonzero(~tmask)
+    if len(bulk_idx) > 1600:
+        bulk_idx = rng.choice(bulk_idx, 1600, replace=False)
+    core = wf[bulk_idx]
+    core_near = wf_near[bulk_idx]
+
+    k, P = _amp_params(a); cost = 2 * k + 1
     n_rej = min(int(round(budget * a)), len(pool))
     n_amp = min(int(round(budget / cost * P)), len(pool))
     combo = np.vstack([core, pool])
@@ -414,10 +433,13 @@ def _draw_sampling_tsne(ax_l, ax_r, seed, tail_k, budget=1000):
 
     _panel(ax_l, idx_rej)
     _panel(ax_r, idx_amp)
+    print(f"[fig8cd] prepared-state Born samples: {len(core)} bulk + {int(tmask.sum())} "
+          f">{tail_k:g}sigma tail; at Q={budget} yields rejection={n_rej}, "
+          f"amplification={n_amp} ({n_amp/max(n_rej,1):.1f}x)", flush=True)
     return n_rej, n_amp
 
 
-def make_master_figure(sweeps, out_dir, seed=0, tail_k=4.0):
+def make_master_figure(sweeps, wf, out_dir, seed=0, tail_k=4.0):
     fig = plt.figure(figsize=(14.0, 13.4), dpi=160, constrained_layout=True)
     gs = fig.add_gridspec(2, 2, height_ratios=[0.95, 1.12])
     ax_est = fig.add_subplot(gs[0, 0])
@@ -427,7 +449,7 @@ def make_master_figure(sweeps, out_dir, seed=0, tail_k=4.0):
 
     _draw_estimation(ax_est, sweeps["analytic a*"]); _axtag(ax_est, "(a)")
     _draw_amp_cost(ax_amp, seed); _axtag(ax_amp, "(b)")
-    _draw_sampling_tsne(ax_rej, ax_aa, seed, tail_k); _axtag(ax_rej, "(c)", inside=True)
+    _draw_sampling_tsne(ax_rej, ax_aa, wf, seed, tail_k); _axtag(ax_rej, "(c)", inside=True)
     _axtag(ax_aa, "(d)", inside=True)
 
     legend = [
@@ -496,7 +518,7 @@ def main():
               f"MC slope={s['mc_slope']:+.3f}  final speedup={s['final_speedup']:.1f}x",
               flush=True)
 
-    make_master_figure(sweeps, OUT_DIR, args.seed, args.tail_k)
+    make_master_figure(sweeps, wf, OUT_DIR, args.seed, args.tail_k)
 
     npz_path = os.path.join(OUT_DIR, "rare_event_qae.npz")
     np.savez(
