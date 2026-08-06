@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -47,10 +48,10 @@ ROW_GROUPS = [
     ("reference", ["__exact__", "jam"]),
     ("wave",      ["dense", "tci_tdvp1", "tci_tdvp2"]),
 ]
-# Bolding marks the better of the two TDVP variants per column. Dense is
-# deliberately excluded: at d=2 Dense (0.112) beats both TDVP variants, but the
-# paper bolds TCI+1TDVP (0.127) there — the comparison is within TDVP only.
-BOLD_KEYS = ["tci_tdvp1", "tci_tdvp2"]
+# No bolding. Cells cluster tightly near the minimum and the gaps between the
+# two TDVP integrators (0.001-0.02) sit at or below the selection noise, so
+# bolding a winner per column asserted a resolution the data does not have.
+# The reported uncertainty makes that visible instead.
 ROW_LABEL = {
     "__exact__":  "Target--target (finite-sample)",
     "jam":        "JAM",
@@ -61,8 +62,34 @@ ROW_LABEL = {
 ROW_ORDER = [m for _, ms in ROW_GROUPS for m in ms]
 
 
-def best_sw(cells: list[dict]) -> float | None:
-    return min(c["sw"] for c in cells) if cells else None
+def best_cell(cells: list[dict]) -> dict | None:
+    """Cell with the lowest seed-mean SW."""
+    return min(cells, key=lambda c: c["sw"]) if cells else None
+
+
+def uncertainty(cell: dict) -> float:
+    """Spread to quote on a best-cell SW.
+
+    Two things move a cell: the seed-to-seed spread of the run itself, and the
+    Monte-Carlo noise of the sliced-Wasserstein estimator (which the migration
+    records per file as `sw_endpoint_mc_std`). We quote the larger, since a
+    single-seed cell has no seed spread to measure but still carries estimator
+    noise. Both are of order 0.005, which is the scale on which the argmin
+    over ~35 cells moves — hence no bolding.
+    """
+    cands = [v for v in (cell.get("sw_std"), cell.get("sw_mc_std"))
+             if v is not None and not math.isnan(v)]
+    return max(cands) if cands else float("nan")
+
+
+def fmt(v: float | None, err: float = float("nan")) -> str:
+    """Format as `0.115(6)`: the parenthesised digit is the 1-sigma spread in
+    units of the last decimal place. Compact enough for a seven-column table."""
+    if v is None:
+        return "--"
+    if math.isnan(err):
+        return f"{v:.3f}"
+    return f"{v:.3f}({max(1, min(9, round(err * 1000)))})"
 
 
 def main():
@@ -77,32 +104,24 @@ def main():
         exact_floor = {int(k): float(v["mean"])
                        for k, v in json.loads(exact_path.read_text()).items()}
 
-    # Build the table dict: table[method][d] = SW.
-    table: dict[str, dict[int, float | None]] = {m: {} for m in ROW_ORDER}
+    # Build the table dict: table[method][d] = (SW, spread).
+    table: dict[str, dict[int, tuple | None]] = {m: {} for m in ROW_ORDER}
     for d, dir_ in DATASETS:
         rd = Path(dir_)
-        # Wave methods (Dense, TDVP1, TDVP2 — see _hp_utils.WAVE_METHODS).
         for m in WAVE_METHODS:
-            cells = collect(rd, m)
-            table[m][d] = best_sw(cells)
-        # JAM (separate D-invariant path).
-        jam_cells = collect_reference(rd, "jam")
-        table["jam"][d] = best_sw(jam_cells)
-        # Exact noise floor.
-        table["__exact__"][d] = exact_floor.get(d)
+            # Dense results are D-independent but were stored under N*_K*_D*,
+            # so `collect` handed Dense a min over replicate runs that the
+            # bond-dimension-dependent methods never got. `collect_reference`
+            # averages over D first, putting every row on the same footing.
+            cells = (collect_reference(rd, m) if m == "dense" else collect(rd, m))
+            c = best_cell(cells)
+            table[m][d] = (c["sw"], uncertainty(c)) if c else None
+        c = best_cell(collect_reference(rd, "jam"))
+        table["jam"][d] = (c["sw"], uncertainty(c)) if c else None
+        floor = exact_floor.get(d)
+        table["__exact__"][d] = (floor, float("nan")) if floor is not None else None
 
     # ── Emit the LaTeX tabular ──────────────────────────────────────────
-    # Row groups separated by \midrule. Within the TDVP group, only the
-    # cell of the TDVP variant with the best (lowest) SW at each d is
-    # bolded — so each column highlights the better of TDVP1 / TDVP2.
-    tdvp_keys = BOLD_KEYS
-    best_tdvp_per_d = {}
-    for d in DS_ALL:
-        candidates = [(m, table[m].get(d)) for m in tdvp_keys
-                      if table[m].get(d) is not None]
-        if candidates:
-            best_tdvp_per_d[d] = min(candidates, key=lambda kv: kv[1])[0]
-
     col_spec = "l" + "c" * len(DS_ALL)
     lines = []
     lines.append(r"\begin{tabular}{" + col_spec + "}")
@@ -113,17 +132,12 @@ def main():
     for g_idx, (group_name, ms) in enumerate(ROW_GROUPS):
         if g_idx > 0:
             lines.append(r"\midrule")
-        in_tdvp = group_name == "wave"
         for m in ms:
             label = ROW_LABEL[m]
             cells = []
             for d in DS_ALL:
                 v = table[m].get(d)
-                cell = f"{v:.3f}" if v is not None else "--"
-                # Bold only when this row has the best SW among TDVP1/TDVP2 at d.
-                if in_tdvp and v is not None and best_tdvp_per_d.get(d) == m:
-                    cell = r"\textbf{" + cell + "}"
-                cells.append(cell)
+                cells.append(fmt(*v) if v is not None else "--")
             lines.append(f"{label} & " + " & ".join(cells) + r" \\")
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")

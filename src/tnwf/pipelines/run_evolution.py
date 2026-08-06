@@ -33,7 +33,6 @@ from tnwf.metrics import (
     mmd_rbf,
     nll_from_density_grid,
     sliced_wasserstein,
-    wasserstein_2_subsampled,
 )
 from tnwf.mps.core import (
     apply_K_step_mps,
@@ -70,38 +69,6 @@ def initial_psi_dense(N: int, d: int, L: float, sigma: float = 1.0) -> np.ndarra
     psi = psi.astype(np.complex128)
     psi /= np.linalg.norm(psi)
     return psi
-
-
-def initial_psi_mps_from_samples(samples_world: np.ndarray, N: int, d: int,
-                                  L: float, D_init: int = 16,
-                                  eps: float = 1e-6) -> list[np.ndarray]:
-    """Initial-state MPS approximating ``ψ_0(x) = √q_{t=0}(x)`` from samples.
-
-    Replaces the Gaussian-on-grid default for trajectory datasets so the
-    MPS pipeline starts at the same physical distribution as the JAM
-    gradient-flow (which integrates from ``target_traj[0]``). Removes the
-    initial-condition asymmetry called out in
-    :doc:`results/RESULTS.md` (Table 1 caveat).
-
-    Procedure:
-      1. Bin world-frame samples on the ``N^d`` grid via histogramdd
-      2. Add a uniform floor ``eps / N^d`` so every cell has positive mass
-      3. Normalise → density ``ρ``, take ``√ρ`` → real-valued wave function
-      4. Compress to a left-canonical MPS with bond cap ``D_init`` via
-         :func:`tnwf.mps.core.dense_to_mps`
-
-    Materialises an ``N^d``-cell dense vector internally. Feasible for
-    ``N^d ≲ 10⁷`` (≈ 80 MB at complex128) — covers petals ``N=32 d=2``
-    (1024 cells) and EB ``N=16 d=5`` (≈ 1M cells). For larger cells, use
-    TCI from samples directly (TODO).
-    """
-    edges = [np.linspace(0.0, L, N + 1) for _ in range(d)]
-    counts, _ = np.histogramdd(samples_world, bins=edges)
-    counts = counts.astype(np.float64) + eps / (N ** d)
-    rho = counts / counts.sum()
-    psi_dense = np.sqrt(rho).ravel().astype(np.complex128)
-    psi_dense /= np.linalg.norm(psi_dense)
-    return dense_to_mps(psi_dense, N=N, d=d, D_max=D_init)
 
 
 def initial_psi_mps(N: int, d: int, L: float, sigma: float = 1.0,
@@ -152,21 +119,6 @@ def sample_target_distribution(
         raise ValueError(f"Unknown dataset: {dataset}")
     # Shift to [0, L) frame
     return x.astype(np.float64) + L / 2.0
-
-
-def sample_target_trajectory_world(
-    dataset: str,
-    n_per_step: int,
-    seed: int,
-    d: int,
-    L: float,
-    **kw,
-) -> np.ndarray:
-    """Trajectory datasets are not part of this minimal release (endpoint only)."""
-    raise ValueError(
-        f"{dataset!r}: trajectory datasets are not included in this release; "
-        "only endpoint datasets (swiss_roll_2d, gmm_*d) are supported."
-    )
 
 
 def sample_from_psi_grid(
@@ -371,26 +323,7 @@ def _run_jam(
     import torch
 
     rng = np.random.default_rng(seed + 1)
-    # Resolve trajectory vs endpoint dataset semantics (mirrors run()).
-    from tnwf.jam.train import DATASET_DEFAULTS as _DEFAULTS
-    _ds_cfg = _DEFAULTS.get(dataset, {})
-    kind = _ds_cfg.get("kind", "endpoint")
-    trajectory_K = _ds_cfg.get("trajectory_K")
-    if kind == "trajectory":
-        if K != trajectory_K:
-            raise ValueError(
-                f"dataset {dataset!r} is trajectory with trajectory_K={trajectory_K}; "
-                f"caller passed K={K}."
-            )
-        _traj_kw = {k: v for k, v in _ds_cfg.items()
-                    if k not in ("d", "n_samples", "L", "kind", "trajectory_K")}
-        target_traj = sample_target_trajectory_world(
-            dataset, n_samples, seed=seed, d=d, L=L, **_traj_kw,
-        )
-        target = target_traj[-1]
-    else:
-        target_traj = None
-        target = sample_target_distribution(dataset, n_samples, seed=seed, d=d, L=L)
+    target = sample_target_distribution(dataset, n_samples, seed=seed, d=d, L=L)
     target_centred = target - L / 2.0                 # match model's centred frame
 
     # Initial particles for the gradient-flow ODE.
@@ -400,13 +333,7 @@ def _run_jam(
     #    cloud at a much wider spread than the actual q_0 — this matches
     #    how the Action Matching paper (Neklyudov 2022) Euler-integrates
     #    from the data's first marginal forward, not from a Gaussian.
-    if kind == "trajectory":
-        target_traj_centred = target_traj - L / 2.0
-        q0 = target_traj_centred[0]                    # (n_samples_traj, d) centred
-        idx0 = rng.integers(0, q0.shape[0], size=n_samples)
-        z_np = q0[idx0].astype(np.float32)
-    else:
-        z_np = rng.standard_normal((n_samples, d)).astype(np.float32)
+    z_np = rng.standard_normal((n_samples, d)).astype(np.float32)
     z = torch.from_numpy(z_np)
 
     t_run_start = _time.perf_counter()
@@ -416,18 +343,12 @@ def _run_jam(
     total_time = _time.perf_counter() - t_run_start
 
     sw_list, mmd_list, nll_list, samples_snaps = [], [], [], []
-    w2_list: list[float] = []                  # populated only for trajectory data
     for ti in range(K + 1):
         x_centred = snaps[ti].astype(np.float64)
         x_world = x_centred + L / 2.0                  # back to [0, L) frame for SW/MMD
-        target_for_step = target_traj[ti] if target_traj is not None else target
+        target_for_step = target
         sw_list.append(sliced_wasserstein(x_world, target_for_step, n_projections=128, rng=rng))
         mmd_list.append(mmd_rbf(x_world, target_for_step))
-        if target_traj is not None:
-            w2_mean, _ = wasserstein_2_subsampled(
-                x_world, target_for_step, n_sub=1000, n_repeats=3, seed=seed,
-            )
-            w2_list.append(w2_mean)
         rho = _samples_to_grid_density(x_centred, N=N_grid, d=d, L=L)
         if rho is None:
             nll_list.append(float("nan"))
@@ -457,15 +378,11 @@ def _run_jam(
         "mmd": np.asarray(mmd_list, dtype=np.float64),
         "nll": np.asarray(nll_list, dtype=np.float64),
         "chi_max": np.zeros(K + 1, dtype=np.int32),
-        "w2": (np.asarray(w2_list, dtype=np.float64) if w2_list
-               else np.zeros(0, dtype=np.float64)),
         "samples_T": samples_T,
         "target": target.astype(np.float32),
         "samples_per_step": np.stack(samples_snaps, axis=0),
         "step_times": step_times,
         "total_time": np.asarray(total_time, dtype=np.float64),
-        "target_traj": (target_traj.astype(np.float32)
-                        if target_traj is not None else None),
     }
     if save:
         if out_dir is None:
@@ -610,84 +527,26 @@ def run(
 
     # Per-snapshot metric containers (snapshot index 0 = initial state)
     sw_list, mmd_list, nll_list, chi_list = [], [], [], []
-    w2_list: list[float] = []                  # populated only for trajectory data
     samples_snapshots: list[np.ndarray] = []
     psi_snapshots: list[np.ndarray] = []
     rng = np.random.default_rng(seed + 1)
 
-    # ── Resolve trajectory vs endpoint dataset semantics ──────────────────
-    # DATASET_DEFAULTS is the canonical source of truth (JAM ckpts may be
-    # older than the trajectory feature). Moved BEFORE state-init so the
-    # MPS / dense initial state can be matched to q_{t=0} on trajectory data.
-    from tnwf.jam.train import DATASET_DEFAULTS as _DEFAULTS
-    _ds_cfg = _DEFAULTS.get(dataset, {})
-    kind = _ds_cfg.get("kind", "endpoint")
-    trajectory_K = _ds_cfg.get("trajectory_K")
-    if kind == "trajectory":
-        if trajectory_K is None:
-            raise ValueError(
-                f"dataset {dataset!r} has kind='trajectory' but no trajectory_K"
-            )
-        if K != trajectory_K:
-            raise ValueError(
-                f"dataset {dataset!r} is a trajectory dataset with "
-                f"trajectory_K={trajectory_K}; caller passed K={K}. "
-                f"They must match for per-snapshot SW alignment."
-            )
-        _traj_kw = {k: v for k, v in _ds_cfg.items()
-                    if k not in ("d", "n_samples", "L", "kind", "trajectory_K")}
-        target_traj = sample_target_trajectory_world(
-            dataset, n_samples, seed=seed, d=d, L=L, **_traj_kw,
-        )
-        # Backward-compat scalar "target" used by checkpoint/output dict
-        # consumers: pin it to the final timepoint.
-        target = target_traj[-1]
-    else:
-        target_traj = None
-        target = sample_target_distribution(dataset, n_samples, seed=seed, d=d, L=L)
+    target = sample_target_distribution(dataset, n_samples, seed=seed, d=d, L=L)
 
     # ── Source width ─────────────────────────────────────────────────────
     sigma_0 = resolve_source_sigma(method, L, sigma)
 
     # ── State initialisation ─────────────────────────────────────────────
-    # For trajectory data we match the initial wave-function density to
-    # ``q_{t=0}`` (the bio data's first snapshot) — matches the JAM grad-flow
-    # protocol (which starts at q_{t=0}) and removes the previous Gaussian-
-    # vs-q_0 asymmetry between MPS pipeline and JAM baseline.
     if is_dense:
-        if target_traj is not None and N**d <= 10_000_000:
-            edges = [np.linspace(0.0, L, N + 1)] * d
-            counts, _ = np.histogramdd(target_traj[0], bins=edges)
-            counts = counts.astype(np.float64) + 1e-6 / (N ** d)
-            rho = counts / counts.sum()
-            state = np.sqrt(rho).ravel().astype(np.complex128)
-            state /= np.linalg.norm(state)
-        else:
-            state = initial_psi_dense(N=N, d=d, L=L, sigma=sigma_0)
+        state = initial_psi_dense(N=N, d=d, L=L, sigma=sigma_0)
     else:
-        if target_traj is not None and N**d <= 10_000_000:
-            state = initial_psi_mps_from_samples(
-                target_traj[0], N=N, d=d, L=L, D_init=D_init,
-            )
-        else:
-            state = initial_psi_mps(N=N, d=d, L=L, sigma=sigma_0, D_init=D_init)
+        state = initial_psi_mps(N=N, d=d, L=L, sigma=sigma_0, D_init=D_init)
 
     # Build v_step dispatch
     v_step = _make_v_step(method, **method_kwargs)
 
-    def _target_at(step_idx: int) -> np.ndarray:
-        """Bio snapshot for step ``step_idx`` (0 = initial state, K = final)."""
-        if target_traj is None:
-            return target
-        return target_traj[step_idx]
-
     def _record(state, target_for_step):
-        """Compute per-snapshot metrics against ``target_for_step``.
-
-        For endpoint datasets, callers pass the same ``target`` every step. For
-        trajectory datasets (wired in a later commit), callers pass the bio
-        snapshot corresponding to the current Trotter step.
-        """
+        """Compute per-snapshot metrics against ``target_for_step``."""
         if is_dense:
             psi_dense = state
             samples = sample_from_psi_grid(psi_dense, N=N, d=d, L=L,
@@ -699,15 +558,6 @@ def run(
             chi_list.append(int(chi_max(state)))
         sw_list.append(sliced_wasserstein(samples, target_for_step, n_projections=128, rng=rng))
         mmd_list.append(mmd_rbf(samples, target_for_step))
-        # W₂ is the AM-paper metric (Neklyudov 2022 Table 1 + Fig 2). For
-        # trajectory datasets we also report it. Subsampled n_sub=1000 over
-        # 3 repeats — exact Hungarian on the full 2000×2000 cost matrix is
-        # O(n³) = 8e9 ops, too slow inside the hot loop.
-        if target_traj is not None:
-            w2_mean, _ = wasserstein_2_subsampled(
-                samples, target_for_step, n_sub=1000, n_repeats=3, seed=seed,
-            )
-            w2_list.append(w2_mean)
         # NLL = goodness-of-fit: evaluate the method's density at TARGET samples
         # (held-out, identical across methods). Lower NLL ⇒ method assigns higher
         # probability to true data. Self-NLL (= entropy) was misleading: a sharp
@@ -725,6 +575,12 @@ def run(
     import pickle
     import time as _time
     t_run_start = _time.perf_counter()
+    # Wall-clock already spent in earlier segments of a resumed run. Without
+    # it, total_time measures only the final segment while step_times keeps
+    # accumulating across all of them, so a resumed run reports an evolution
+    # that is longer than the run that contained it (observed at d=6:
+    # sum(step_times)=3782 s against total_time=1009 s).
+    elapsed_before = 0.0
     step_times: list[float] = []
     start_k = 0
 
@@ -747,11 +603,10 @@ def run(
                 samples_snapshots = list(ckpt["samples_snapshots"])
                 psi_snapshots = list(ckpt.get("psi_snapshots", []))
                 step_times = list(ckpt["step_times"])
+                elapsed_before = float(ckpt.get("elapsed", sum(step_times)))
                 rng = np.random.default_rng()
                 rng.bit_generator.state = ckpt["rng_state"]
                 target = ckpt["target"]
-                if "target_traj" in ckpt and target_traj is not None:
-                    target_traj = ckpt["target_traj"]
                 print(f"[run] resumed from checkpoint at k={start_k}/{K}", flush=True)
             else:
                 print(f"[run] checkpoint at {ckpt_path} mismatch — starting fresh",
@@ -761,7 +616,7 @@ def run(
                   flush=True)
 
     if start_k == 0:
-        _record(state, _target_at(0))
+        _record(state, target)
 
     def _save_checkpoint(next_k: int):
         """Atomically write checkpoint, then trigger external commit (volume, etc.)."""
@@ -780,9 +635,9 @@ def run(
                 "samples_snapshots": samples_snapshots,
                 "psi_snapshots": psi_snapshots,
                 "step_times": step_times,
+                "elapsed": elapsed_before + (_time.perf_counter() - t_run_start),
                 "rng_state": rng.bit_generator.state,
                 "target": target,
-                "target_traj": target_traj,
             }, f, protocol=pickle.HIGHEST_PROTOCOL)
         tmp.replace(ckpt_path)
         if checkpoint_callback is not None:
@@ -809,7 +664,7 @@ def run(
         if not is_dense:
             state = _right_canonicalize(state)
         step_times.append(_time.perf_counter() - t0)
-        _record(state, _target_at(k + 1))
+        _record(state, target)
         if checkpoint_every > 0 and (k + 1) % checkpoint_every == 0:
             _save_checkpoint(next_k=k + 1)
         # Per-step progress (flushed for live logs). Only every
@@ -822,7 +677,7 @@ def run(
                    f"sw={sw_last:.4f}",
                    flush=True)
 
-    total_time = _time.perf_counter() - t_run_start
+    total_time = elapsed_before + (_time.perf_counter() - t_run_start)
 
     # Final samples
     if is_dense:
@@ -850,18 +705,10 @@ def run(
         "mmd": np.asarray(mmd_list, dtype=np.float64),
         "nll": np.asarray(nll_list, dtype=np.float64),
         "chi_max": np.asarray(chi_list, dtype=np.int32),
-        # W₂ — populated only for trajectory datasets; AM-paper metric
-        "w2": (np.asarray(w2_list, dtype=np.float64) if w2_list
-               else np.zeros(0, dtype=np.float64)),
         "samples_T": samples_T.astype(np.float32),
         "target": target.astype(np.float32),
         # K+1 stacked (200, d) sample snapshots — useful for time-evolution panels
         "samples_per_step": np.stack(samples_snapshots, axis=0),
-        # For trajectory datasets: (K+1, n, d) bio-data snapshots aligned with
-        # the per-step SW comparisons. None for endpoint datasets (dropped from
-        # npz by the isinstance-ndarray filter below).
-        "target_traj": (target_traj.astype(np.float32)
-                        if target_traj is not None else None),
         # Wall-clock per-Trotter-step (length K, in seconds) + total run time
         "step_times": np.asarray(step_times, dtype=np.float64),
         "total_time": np.asarray(total_time, dtype=np.float64),

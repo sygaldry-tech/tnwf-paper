@@ -257,7 +257,7 @@ def load_jam(checkpoint_path: str, device: str | None = None) -> tuple[ScalarPot
         device = "cuda" if torch.cuda.is_available() else (
             "mps" if torch.backends.mps.is_available() else "cpu"
         )
-    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     cfg = ckpt["config"]
     model = ScalarPotentialMLP(
         d=cfg["d"], hidden=cfg["hidden"], time_embed_dim=cfg["time_embed_dim"],

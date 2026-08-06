@@ -45,7 +45,8 @@ DATASETS = [
     (7, "data/gmm_7d_hp"),
     (8, "data/gmm_8d_hp"),
 ]
-EXTRAPOLATE_TO = 9
+#: Which timer backs panel (b). See the comment at the fit below.
+TIMER = "evolve_time"
 
 
 def main():
@@ -72,20 +73,39 @@ def main():
             table[(d, m)] = {**best, "mem": mem, "d": d}
 
     # Time ratio: extrapolate Dense walltime if absent at high d.
-    dense_pts = [(d, table[(d, "dense")]["time"])
+    #
+    # TIMER is `evolve_time` (the sum of step_times), not `total_time`.
+    # total_time brackets the whole Trotter loop and so includes the per-step
+    # metric callback (sampling, SW, MMD, NLL), which is dominated by mmd_rbf's
+    # three n x n kernels. That overhead is 0.5-3% at d >= 4 but over 90% at
+    # d=2, enough to make d=2 look *more* expensive than d=3 -- impossible for
+    # an N^d method, and it flattened the fit the d=8 projection rests on.
+    # Figure 6(b)'s caption says "total evolution time", which is this quantity.
+    dense_pts = [(d, table[(d, "dense")][TIMER])
                  for d, _ in DATASETS
                  if (d, "dense") in table
-                 and table[(d, "dense")]["time"] == table[(d, "dense")]["time"]]
+                 and table[(d, "dense")][TIMER] == table[(d, "dense")][TIMER]]
     if len(dense_pts) >= 2:
         ds_d, ts_d = zip(*dense_pts)
         slope_d, intercept_d = np.polyfit(ds_d, np.log10(ts_d), 1)
+        print(f"[fig6b] Dense {TIMER} fit over d={list(ds_d)}: "
+              f"log10 t = {slope_d:.3f} d + {intercept_d:.3f}")
+        for d, t in dense_pts:
+            print(f"         d={d}: {t:10.1f} s")
     else:
         slope_d, intercept_d = (float("nan"), float("nan"))
+    # Which d have no measured Dense timing and are therefore projected. Stated
+    # out loud: a silently extrapolated point reads as a measurement.
+    projected = [d for d, _ in DATASETS
+                 if (d, "dense") not in table
+                 or table[(d, "dense")][TIMER] != table[(d, "dense")][TIMER]]
+    if projected:
+        print(f"[fig6b] Dense walltime PROJECTED (not measured) at d={projected}")
 
     def t_dense_at(d):
         c = table.get((d, "dense"))
-        if c is not None and c["time"] == c["time"]:
-            return c["time"]
+        if c is not None and c[TIMER] == c[TIMER]:
+            return c[TIMER]
         if slope_d == slope_d:
             return 10 ** (slope_d * d + intercept_d)
         return float("nan")
@@ -96,9 +116,9 @@ def main():
             cell = table.get((d, m))
             if cell is None:
                 continue
-            cell["time_ratio"] = (cell["time"] / t_d
+            cell["time_ratio"] = (cell[TIMER] / t_d
                                   if (t_d and t_d == t_d
-                                      and cell["time"] == cell["time"])
+                                      and cell[TIMER] == cell[TIMER])
                                   else float("nan"))
 
     ds_all = sorted({d for d, _ in DATASETS})

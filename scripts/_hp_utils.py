@@ -152,8 +152,9 @@ def collect_reference(results_dir: Path, method: str) -> list[dict]:
             if rec is None:
                 continue
             d = bins.setdefault((N, K), {"sw": [], "mmd": [], "time": [],
-                                         "evolve_time": []})
+                                         "evolve_time": [], "sw_mc_std": []})
             d["sw"].append(rec["sw"])
+            d["sw_mc_std"].append(rec["sw_mc_std"])
             d["mmd"].append(rec["mmd"])
             if not np.isnan(rec["time"]):
                 d["time"].append(rec["time"])
@@ -163,6 +164,7 @@ def collect_reference(results_dir: Path, method: str) -> list[dict]:
         {"N": N, "K": K,
          "sw":   float(np.mean(d["sw"])),
          "sw_std": float(np.std(d["sw"])) if len(d["sw"]) > 1 else float("nan"),
+         "sw_mc_std": float(np.nanmean(d["sw_mc_std"])) if d["sw_mc_std"] else float("nan"),
          "mmd":  float(np.mean(d["mmd"])),
          "time": float(np.mean(d["time"])) if d["time"] else float("nan"),
          "evolve_time": (float(np.mean(d["evolve_time"])) if d["evolve_time"]
