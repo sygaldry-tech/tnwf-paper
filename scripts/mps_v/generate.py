@@ -4,9 +4,11 @@ Loads a trained MPS-V (tensor-train velocity potential), runs the 2-site TDVP
 V-step with the trained cores fed directly — no runtime tensor-cross — and saves
 the sampled trajectory plus metrics to an ``.npz`` the demo notebook can load.
 
-The reported accuracy is the **grid-unbiased** sliced-Wasserstein: WF samples land
-on grid nodes, so a half-cell shift ``x -> x - dx/2`` (``dx = L/N``) is applied
-before the SW, matching the paper's convention (Table 2).
+The reported accuracy is the sliced-Wasserstein on node-centred Born samples
+(see ``tnwf.coords``): the sampler dithers symmetrically about the grid node, so
+no half-cell correction is applied here. Releases up to v1 dithered to the right
+of the node and compensated at this point instead; the ``sw_unbiased`` key name
+is kept for compatibility with the shipped artifact and the demo notebook.
 
 The shipped ``examples/checkpoints/mps_v_gmm_d8_result.npz`` holds the paper's
 actual Table 2 run (2TDVP, N=32, K=160; SW ~ 0.036). This script reproduces an
@@ -25,19 +27,20 @@ import argparse
 
 import numpy as np
 
+from tnwf.metrics.sw import sliced_wasserstein
 from tnwf.pipelines.run_evolution import run
 
+# The paper's estimator: 128 projections, fixed seed so the trajectory is
+# reproducible from the saved samples. Previously this module carried its own
+# 200-projection copy of sliced_wasserstein with a different length-matching
+# rule, which quietly made its numbers incomparable with the pipeline's.
+SW_PROJECTIONS = 128
+SW_SEED = 0
 
-def _sw(a: np.ndarray, b: np.ndarray, n_proj: int = 200, seed: int = 0) -> float:
-    """Sliced-Wasserstein between two point clouds (paper convention)."""
-    rng = np.random.default_rng(seed)
-    p = rng.normal(size=(n_proj, a.shape[1]))
-    p /= np.linalg.norm(p, axis=1, keepdims=True)
-    a_s, b_s = np.sort(a @ p.T, axis=0), np.sort(b @ p.T, axis=0)
-    if a_s.shape[0] != b_s.shape[0]:
-        idx = np.linspace(0, b_s.shape[0] - 1, a_s.shape[0]).astype(int)
-        b_s = b_s[idx]
-    return float(np.mean(np.abs(a_s - b_s)))
+
+def _sw(a: np.ndarray, b: np.ndarray) -> float:
+    return float(sliced_wasserstein(a, b, n_projections=SW_PROJECTIONS,
+                                    rng=np.random.default_rng(SW_SEED)))
 
 
 def main() -> None:
@@ -54,10 +57,12 @@ def main() -> None:
             K=a.K, n_samples=a.n_samples, method_kwargs={"D_max": a.D_max}, save=False)
 
     L, N = float(r["L"]), int(r["N"])
-    dx = L / N
     target = np.asarray(r["target"], dtype=np.float64)
-    # Grid-unbiased SW per step (half-cell shift) from the per-step sample snapshots.
-    sw_unbiased = np.array([_sw(np.asarray(s, np.float64) - dx / 2.0, target)
+    # Samples are already node-centred (tnwf.coords), so no half-cell shift is
+    # applied here. `sw_unbiased` is retained as a key name because the shipped
+    # v1 artifact and the demo notebook read it; under the current convention it
+    # is simply the SW, identical to `sw`.
+    sw_unbiased = np.array([_sw(np.asarray(s, np.float64), target)
                             for s in r["samples_per_step"]])
     # Sample-size floor: SW between two independent halves of the target draw.
     h = target.shape[0] // 2

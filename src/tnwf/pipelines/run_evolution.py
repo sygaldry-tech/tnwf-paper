@@ -18,6 +18,7 @@ from typing import Callable, Literal
 
 import numpy as np
 
+from tnwf import coords
 from tnwf.data.gaussian_mixture import sample_gaussian_mixture
 from tnwf.data.swiss_roll import sample_swiss_roll
 from tnwf.dense.evolution import (
@@ -176,12 +177,18 @@ def sample_from_psi_grid(
     n: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    """Draw n samples in [0, L)^d from |ψ|² (binned on the N^d grid + uniform jitter)."""
+    """Draw n samples from |ψ|², dithered within the cell centred on each node.
+
+    ψ is stored as its values *at* the nodes ``x_i = i·dx`` (see ``tnwf.coords``),
+    so ``|ψ_i|²`` is the mass of the cell centred there and the dither is
+    symmetric: ``x = (i + U(-½,+½))·dx``. Samples therefore span
+    ``[-dx/2, L-dx/2)``, which is the correct support — not ``[0, L)``.
+    """
     rho = density_from_psi(psi)
     cell_idx = rng.choice(len(rho), size=n, p=rho)
     nd_idx = np.array(np.unravel_index(cell_idx, (N,) * d)).T
     dx = L / N
-    jitter = rng.uniform(0.0, 1.0, nd_idx.shape)
+    jitter = rng.uniform(-0.5, 0.5, nd_idx.shape)
     return ((nd_idx + jitter) * dx).astype(np.float64)
 
 
@@ -195,11 +202,14 @@ def sample_from_mps(
 ) -> np.ndarray:
     """Autoregressive sampling. Right-canonicalises first so that the running
     left-context vector ‖v_k(n)‖² gives the correct conditional p(x_k | x_<k).
+
+    Index-to-coordinate uses the node-centred convention of ``tnwf.coords``:
+    ``x = (i + U(-½,+½))·dx``.
     """
     rc = right_canonicalize(mps)
     indices = sample_mps_indices(rc, n, rng)
     dx = L / N
-    jitter = rng.uniform(0.0, 1.0, indices.shape)
+    jitter = rng.uniform(-0.5, 0.5, indices.shape)
     return ((indices + jitter) * dx).astype(np.float64)
 
 
@@ -436,6 +446,9 @@ def _run_jam(
         "d": d,
         "K": K,
         "L": L,
+        # Continuous ODE particles — never grid-binned, so already unbiased.
+        coords.CONV_KEY: coords.CONV_CELL,
+        coords.SCHEMA_KEY: coords.SCHEMA,
         "sw": np.asarray(sw_list, dtype=np.float64),
         "mmd": np.asarray(mmd_list, dtype=np.float64),
         "nll": np.asarray(nll_list, dtype=np.float64),
@@ -457,7 +470,10 @@ def _run_jam(
             out_dir_path = Path(out_dir)
         out_dir_path.mkdir(parents=True, exist_ok=True)
         savable = {k: v for k, v in out.items() if isinstance(v, np.ndarray)}
-        for k in ("method", "dataset", "seed", "N", "d", "K", "L"):
+        # np.savez_compressed silently drops non-ndarray values, so every scalar
+        # that must survive the round-trip is listed here explicitly.
+        for k in ("method", "dataset", "seed", "N", "d", "K", "L",
+                  coords.CONV_KEY, coords.SCHEMA_KEY):
             savable[k] = np.asarray(out[k])
         np.savez_compressed(out_dir_path / f"seed{seed}.npz", **savable)
     return out
@@ -794,6 +810,9 @@ def run(
         "d": d,
         "K": K,
         "L": L,
+        # Born samples dithered about the node — see tnwf.coords.
+        coords.CONV_KEY: coords.CONV_CELL,
+        coords.SCHEMA_KEY: coords.SCHEMA,
         "sw": np.asarray(sw_list, dtype=np.float64),
         "mmd": np.asarray(mmd_list, dtype=np.float64),
         "nll": np.asarray(nll_list, dtype=np.float64),
@@ -827,7 +846,10 @@ def run(
             out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         savable = {k: v for k, v in out.items() if isinstance(v, np.ndarray)}
-        for k in ("method", "dataset", "seed", "N", "d", "K", "L"):
+        # np.savez_compressed silently drops non-ndarray values, so every scalar
+        # that must survive the round-trip is listed here explicitly.
+        for k in ("method", "dataset", "seed", "N", "d", "K", "L",
+                  coords.CONV_KEY, coords.SCHEMA_KEY):
             savable[k] = np.asarray(out[k])
         np.savez_compressed(out_dir / f"seed{seed}.npz", **savable)
         # Successful save → drop the checkpoint to save volume space and avoid
