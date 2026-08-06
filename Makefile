@@ -1,4 +1,4 @@
-.PHONY: licenses licenses-check verify-data exact-sw-floor help sync test test-needle test-medium \
+.PHONY: package-data licenses licenses-check verify-data exact-sw-floor help sync test test-needle test-medium \
         jam-all jam-swiss jam-gmm2 jam-gmm3 \
         run-swiss run-gmm2 run-gmm3 \
         fig2 fig3 fig4 supp notebook leaderboard leaderboard-nll clean-results \
@@ -90,6 +90,12 @@ supp:
 
 # Table 1 (best-cell SW). Needs the gmm_*_hp sweeps unpacked at data/, plus the
 # tracked data/exact_sw_floor.json for the target--target row.
+# Point DATA_SRC at the migrated (v2) archive tree, i.e. the contents of data/.
+DATA_SRC ?= ../tnwf-paper-data-v2
+
+package-data:           ## build the Zenodo data tarball + checksum (needs the migrated archive)
+	uv run python scripts/package_data_archive.py --src $(DATA_SRC)
+
 licenses:               ## regenerate licenses/THIRD_PARTY_LICENSES.md from uv.lock
 	uv run python scripts/gen_third_party_licenses.py
 

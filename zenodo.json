@@ -1,0 +1,54 @@
+{
+  "_comment": [
+    "Zenodo deposition metadata for the tnwf-paper data archive.",
+    "Upload with: scripts/upload_zenodo.sh (see licenses/../README.md Data section),",
+    "or paste these fields into the Zenodo web form.",
+    "",
+    "access_right is 'restricted': the DOI and this metadata are public and",
+    "citable, but the 160 MB of files are released only on request. If the",
+    "journal or referees need the files during review, generate a Zenodo share",
+    "link rather than flipping the record to open.",
+    "",
+    "Author order and affiliations mirror sn-article.tex. Add ORCIDs before",
+    "publishing -- Zenodo accepts them per creator and they improve indexing."
+  ],
+
+  "title": "Data archive for \"Scalable quantum simulation of continuous-time generative models via tensor networks\"",
+
+  "upload_type": "dataset",
+
+  "description": "<p>Hyperparameter-sweep outputs, trained velocity-potential checkpoints and per-cell run records generated and analysed in the accompanying paper. Unpacks at the root of the code repository, where the figure and table generators read it.</p><p><strong>Contents.</strong> Per-cell results for the <em>d</em>=2..8 orthogonal Gaussian-mixture sweeps (Dense, JAM, TCI+1TDVP, TCI+2TDVP, and the unreported TCI+ALS and ACI variants); the <em>d</em>=8..32 trained MPS-V trajectories behind Table 2; the theory CSV caches behind Figure 4; trained JAM checkpoints; and a MANIFEST.tsv giving the size and SHA-256 of every member.</p><p><strong>Coordinate convention.</strong> Born-sample coordinates are stored node-centred, x = (i + u)&middot;dx with u ~ U(-1/2, 1/2), matching the grid on which the wavefunction is represented. Each per-cell record carries an endpoint sliced-Wasserstein recomputed under that convention with a recorded projection seed (sw_endpoint), alongside the pre-correction values (sw_legacy_v1) so the difference is auditable. Records in earlier releases were dithered to the right of the node and carried a systematic +dx/2 offset per axis; scripts/migrate_archive.py in the code repository performs the conversion.</p><p><strong>Verification.</strong> <code>make verify-data</code> in the code repository checks an unpacked copy against MANIFEST.tsv.</p>",
+
+  "creators": [
+    {"name": "Kodama, Nathan X.", "affiliation": "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"},
+    {"name": "Wray, L. Andrew", "affiliation": "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"},
+    {"name": "Cochran, Sam", "affiliation": "University of Michigan, Ann Arbor, MI, USA"},
+    {"name": "Rigetti, Chad", "affiliation": "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"},
+    {"name": "Veerapaneni, Shravan", "affiliation": "University of Michigan, Ann Arbor, MI, USA"},
+    {"name": "Keiser, Michael J.", "affiliation": "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"}
+  ],
+
+  "access_right": "restricted",
+  "access_conditions": "Available on request to the corresponding author. The code needed to regenerate every released figure and table is public at https://github.com/sygaldry-tech/tnwf-paper.",
+
+  "license": "cc-by-4.0",
+
+  "keywords": [
+    "tensor networks",
+    "matrix product states",
+    "generative models",
+    "wavefunction flows",
+    "quantum simulation",
+    "amplitude estimation",
+    "TDVP",
+    "tensor cross interpolation"
+  ],
+
+  "related_identifiers": [
+    {"relation": "isSupplementTo", "identifier": "https://github.com/sygaldry-tech/tnwf-paper", "scheme": "url", "resource_type": "software"}
+  ],
+
+  "version": "v2",
+
+  "notes": "v2 supersedes any earlier deposit: sample coordinates are node-centred and the endpoint metrics are recomputed accordingly. See the coordinate-convention note in the description."
+}

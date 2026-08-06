@@ -142,18 +142,27 @@ Everything above marked "needs …" reads from `data/`, which is **not in this
 repository** — the hyperparameter sweeps alone are ~155 MB. It is archived
 separately with a DOI:
 
-<!-- TODO(author): replace ZENODO_DOI / ZENODO_URL once the archive is uploaded. -->
+The archive is deposited with **restricted** access: the DOI and its metadata
+are public and citable, but the files are released on request (see
+[`zenodo.json`](zenodo.json)). Everything needed to regenerate every released
+figure and table from it is in this repository.
+
+<!-- TODO(author): replace ZENODO_RECORD once the deposit is published. -->
 
 ```bash
 cd tnwf-paper
-curl -L -o tnwf-paper-data.tar.gz "https://zenodo.org/records/XXXXXXX/files/tnwf-paper-data.tar.gz"
+curl -L -o tnwf-paper-data.tar.gz "https://zenodo.org/records/ZENODO_RECORD/files/tnwf-paper-data.tar.gz"
 
-# Compare against the checksum shown on the Zenodo record page:
-shasum -a 256 tnwf-paper-data.tar.gz
+# Verify before unpacking. This digest is for the v2 archive built by
+# scripts/package_data_archive.py; the build is byte-reproducible, so
+# rebuilding from the same inputs reproduces it exactly.
+echo "c10a9173c6b3066e3c91b35eb6037faccc5ddd304244a22d38a4ad937ee949ba  tnwf-paper-data.tar.gz" | shasum -a 256 -c
 
 # Unpack AT THE REPO ROOT — every member is rooted at data/, and several
 # generators hardcode relative paths like data/gmm_2d_hp/ with no CLI override.
 tar xzf tnwf-paper-data.tar.gz
+
+make verify-data          # every file against the archive's own MANIFEST.tsv
 ```
 
 That creates:
