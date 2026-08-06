@@ -224,9 +224,17 @@ version-controlled — see the archive section above.
 ## Dependencies & licenses
 
 Dependencies are pinned in [`uv.lock`](uv.lock), which records the exact
-resolved version of every direct and transitive dependency. Dependency licenses
-are not restated here: the lock file is the authoritative record, and each
-package's own terms are published with it on PyPI.
+resolved version of every direct and transitive dependency.
+[`licenses/THIRD_PARTY_LICENSES.md`](licenses/THIRD_PARTY_LICENSES.md) reports
+each one's license, regenerated from the lock by `make licenses`
+(`make licenses-check` exits non-zero if anything non-permissive appears).
+
+As of the current lock, the 36 packages reachable on macOS and Windows are all
+permissively licensed — no copyleft of any kind. The remaining 17 are the
+NVIDIA CUDA runtime, pulled in transitively by `torch` behind
+`sys_platform == 'linux'`; they are proprietary, are not installed on other
+platforms, and are not fetched by the CPU-only reproduction path documented
+above. This repository vendors no third-party code.
 
 ## License
 
