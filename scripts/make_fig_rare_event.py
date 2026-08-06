@@ -393,18 +393,23 @@ def _draw_sampling_tsne(ax_l, ax_r, wf, seed, tail_k, budget=1000):
     rng = np.random.default_rng(seed)
     C = gm_mode_centers()
 
-    def nearest(x):
-        d = np.linalg.norm(x[:, None, :] - C[None], axis=-1)
-        return d.argmin(1), d.min(1)
-
     wf = np.asarray(wf, dtype=float)
-    wf_near, wf_dist = nearest(wf)
-    tmask = wf_dist > tail_k * SIGMA
+    # Use the module's own labelling rather than an inline nearest-mode test.
+    # label_tails excludes *residual* mass -- samples nearer the origin than any
+    # mode, i.e. source density the flow never transported. Those are not rare
+    # events, they are failures to move, and the a_wf this figure reports
+    # already excludes them. Labelling them here as well would have drawn ~2.5
+    # percentage points of untransported mass as successful tail samples, which
+    # shows up as a clump of mixed-mode points sitting in the middle of the
+    # embedding belonging to no cluster.
+    wf_near, _, tmask, residual = label_tails(wf, C, tail_k)
     a = float(chi2.sf(tail_k ** 2, D))          # analytic a*, as in panels (a,b)
 
     pool = wf[tmask][:600]
     pool_near = wf_near[tmask][:600]
-    bulk_idx = np.flatnonzero(~tmask)
+    # Bulk = transported, non-tail. Residual is excluded from both clouds so
+    # the panels show only mass the flow actually placed on the mixture.
+    bulk_idx = np.flatnonzero(~tmask & ~residual)
     if len(bulk_idx) > 1600:
         bulk_idx = rng.choice(bulk_idx, 1600, replace=False)
     core = wf[bulk_idx]
@@ -432,9 +437,11 @@ def _draw_sampling_tsne(ax_l, ax_r, wf, seed, tail_k, budget=1000):
 
     _panel(ax_l, idx_rej)
     _panel(ax_r, idx_amp)
-    print(f"[fig8cd] prepared-state Born samples: {len(core)} bulk + {int(tmask.sum())} "
-          f">{tail_k:g}sigma tail; at Q={budget} yields rejection={n_rej}, "
-          f"amplification={n_amp} ({n_amp/max(n_rej,1):.1f}x)", flush=True)
+    print(f"[fig8cd] prepared-state Born samples: {len(core)} bulk + "
+          f"{int(tmask.sum())} >{tail_k:g}sigma tail "
+          f"({int(residual.sum())} residual excluded); at Q={budget} yields "
+          f"rejection={n_rej}, amplification={n_amp} "
+          f"({n_amp / max(n_rej, 1):.1f}x)", flush=True)
     return n_rej, n_amp
 
 
