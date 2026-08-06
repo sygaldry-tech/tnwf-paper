@@ -25,7 +25,7 @@ import numpy as np
 # Magma ramp, matching the submitted figure and the rest of the paper's palette
 # (Fig 4 / fig_scaling_bounds uses magma at 0.18 / 0.40 / 0.76).
 #
-# This file previously carried a Wong/Okabe-Ito palette (grey #cccccc target,
+# This file previously carried a Wong/Okabe-Ito palette (gray #cccccc target,
 # black Exact, vermillion #D55E00 TDVP1) predating the manuscript's switch to
 # magma. That was the cause of the mismatch against the committed fig3_tsne.pdf:
 # the released script drew a stale palette, so the script needed correcting, not
@@ -33,7 +33,7 @@ import numpy as np
 #
 # Pinned as explicit triples rather than plt.cm.magma(f) calls: magma is a
 # 256-entry lookup table, so magma(f) is piecewise constant in f and a
-# "close enough" f silently lands on a neighbouring stop. These are LUT indices
+# "close enough" f silently lands on a neighboring stop. These are LUT indices
 # 38 / 128 / 199, read back out of the committed figure, so they reproduce it
 # regardless of any future change to matplotlib's colormap data.
 COLOR_TARGET = (0.146785, 0.068738, 0.334011)   # magma 38/255 — first-drawn series
@@ -69,7 +69,7 @@ def derive_cells(dims=(3, 5, 7)) -> dict:
                     z = np.load(f, allow_pickle=True)
                     if "sw_endpoint" not in z.files:
                         raise SystemExit(
-                            f"{f} predates the node-centred coordinate "
+                            f"{f} predates the node-centered coordinate "
                             f"convention; run scripts/migrate_archive.py first.")
                     sw = float(np.asarray(z["sw_endpoint"]))
                     seed = int(f.stem.replace("seed", ""))

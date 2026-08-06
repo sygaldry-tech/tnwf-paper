@@ -4,7 +4,7 @@ Pseudospectral kinetic operator K = ½ (S F D_K F† S†)^⊕d with eigenvalues
 
     λ[k_0,...,k_{d-1}] = ½ (2π/L)² Σ_j (k_j - N/2)²
 
-Grid points live on the periodic torus [0, L)^d. Sample data is centred at 0
+Grid points live on the periodic torus [0, L)^d. Sample data is centered at 0
 (i.e. lives in [-L/2, L/2)) — see tnwf.metrics.nll.grid_pmf_indices.
 """
 from __future__ import annotations

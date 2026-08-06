@@ -85,7 +85,7 @@ def truncate_mps(
     D_max: int,
     tol: float = 0.0,
 ) -> tuple[list[np.ndarray], float]:
-    """Left-to-right SVD sweep: left-canonicalise + truncate bonds to D_max.
+    """Left-to-right SVD sweep: left-canonicalize + truncate bonds to D_max.
 
     Returns (truncated_mps, total_truncation_error). When tol>0, the kept rank
     is min(D_max, |{S_i > tol·S_0}|).

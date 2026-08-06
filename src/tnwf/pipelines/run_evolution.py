@@ -5,7 +5,7 @@ run(method, dataset, seed, N, d, K, β-schedule, jam_ckpt) → snapshots .npz
 For each method in {dense, tci_tdvp1, tci_tdvp2, jam}
 this:
   1. Loads the JAM checkpoint to obtain V_fn(x, t).
-  2. Initialises ψ_0 = √(N(0, I)) on the centred grid (positive real, ‖ψ_0‖=1).
+  2. Initializes ψ_0 = √(N(0, I)) on the centered grid (positive real, ‖ψ_0‖=1).
   3. Evolves through K Trotter steps via the 8-step product formula.
   4. After each Trotter step, samples from |ψ|² and computes SW/MMD/NLL vs the
      target distribution at that time slice.
@@ -63,8 +63,8 @@ Method = Literal[
 def initial_psi_dense(N: int, d: int, L: float, sigma: float = 1.0) -> np.ndarray:
     """Real-valued ψ_0(x) = √(p_source) where p_source = N(L/2, σ²·I) on [0,L)^d."""
     grid = make_grid(N=N, d=d, L=L)
-    centred = grid - L / 2.0
-    log_p = -0.5 * np.sum(centred ** 2, axis=-1) / (sigma ** 2)
+    centered = grid - L / 2.0
+    log_p = -0.5 * np.sum(centered ** 2, axis=-1) / (sigma ** 2)
     psi = np.exp(0.5 * log_p)                       # √p (positive real)
     psi = psi.astype(np.complex128)
     psi /= np.linalg.norm(psi)
@@ -129,10 +129,10 @@ def sample_from_psi_grid(
     n: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    """Draw n samples from |ψ|², dithered within the cell centred on each node.
+    """Draw n samples from |ψ|², dithered within the cell centered on each node.
 
     ψ is stored as its values *at* the nodes ``x_i = i·dx`` (see ``tnwf.coords``),
-    so ``|ψ_i|²`` is the mass of the cell centred there and the dither is
+    so ``|ψ_i|²`` is the mass of the cell centered there and the dither is
     symmetric: ``x = (i + U(-½,+½))·dx``. Samples therefore span
     ``[-dx/2, L-dx/2)``, which is the correct support — not ``[0, L)``.
     """
@@ -152,10 +152,10 @@ def sample_from_mps(
     n: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    """Autoregressive sampling. Right-canonicalises first so that the running
+    """Autoregressive sampling. Right-canonicalizes first so that the running
     left-context vector ‖v_k(n)‖² gives the correct conditional p(x_k | x_<k).
 
-    Index-to-coordinate uses the node-centred convention of ``tnwf.coords``:
+    Index-to-coordinate uses the node-centered convention of ``tnwf.coords``:
     ``x = (i + U(-½,+½))·dx``.
     """
     rc = right_canonicalize(mps)
@@ -284,7 +284,7 @@ def _samples_to_grid_density(
     L: float,
     smooth: bool = True,
 ) -> np.ndarray | None:
-    """Bin centred-frame (n, d) samples into an M^d grid pmf normalised to sum=1.
+    """Bin centered-frame (n, d) samples into an M^d grid pmf normalized to sum=1.
 
     With ``smooth=True``, applies Laplace smoothing (+1 count per cell) so empty
     cells get a small floor — keeps log-density finite when target points fall
@@ -325,7 +325,7 @@ def _run_jam(
 
     rng = np.random.default_rng(seed + 1)
     target = sample_target_distribution(dataset, n_samples, seed=seed, d=d, L=L)
-    target_centred = target - L / 2.0                 # match model's centred frame
+    target_centred = target - L / 2.0                 # match model's centered frame
 
     # Initial particles for the gradient-flow ODE.
     #  - Endpoint datasets: source is N(0, I) (the JAM training source).
@@ -340,7 +340,7 @@ def _run_jam(
     t_run_start = _time.perf_counter()
     snaps = sample_gradient_flow(
         model, z, n_steps=K, save_every=1, L=L,
-    )                                                  # (K+1, n_samples, d) centred
+    )                                                  # (K+1, n_samples, d) centered
     total_time = _time.perf_counter() - t_run_start
 
     sw_list, mmd_list, nll_list, samples_snaps = [], [], [], []
@@ -537,7 +537,7 @@ def run(
     # ── Source width ─────────────────────────────────────────────────────
     sigma_0 = resolve_source_sigma(method, L, sigma)
 
-    # ── State initialisation ─────────────────────────────────────────────
+    # ── State initialization ─────────────────────────────────────────────
     if is_dense:
         state = initial_psi_dense(N=N, d=d, L=L, sigma=sigma_0)
     else:
@@ -646,7 +646,7 @@ def run(
 
     n_substeps = int(method_kwargs.get("trotter_substeps", 1))
     progress_every = max(1, K // 20)               # ≤20 lines/run, always ≥1
-    # Re-canonicalise the MPS after each Trotter step to clean up gauge drift
+    # Re-canonicalize the MPS after each Trotter step to clean up gauge drift
     # from bond-cap-saturated SVD truncation. Without this, at D=64 (chi cap)
     # the truncation residual compounds across 4–5 steps and SW jumps from
     # 0.27 → 1.16 on a g=2, N=64, K=8 diagnostic.

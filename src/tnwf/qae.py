@@ -21,7 +21,7 @@ Why MLQAE rather than QPE-based QAE or IQAE:
   • No ancilla register / QFT (vs canonical Brassard QAE).
   • Fixed geometric schedule of k ∈ {0, 1, 2, 4, ..., 2^M}; no
     adaptive bracket-narrowing logic to get wrong.
-  • Maximum-likelihood estimator is a simple 1-D optimisation.
+  • Maximum-likelihood estimator is a simple 1-D optimization.
   • Established to achieve Heisenberg scaling in the original paper.
 
 References:

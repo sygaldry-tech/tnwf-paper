@@ -41,7 +41,7 @@ def _safe_load(path: Path) -> dict | None:
     """Open a seed*.npz; return None if it's mid-write or corrupted.
 
     Reads `sw_endpoint`, the endpoint sliced-Wasserstein recomputed from
-    node-centred samples with a recorded projection seed (see
+    node-centered samples with a recorded projection seed (see
     `scripts/migrate_archive.py`). A pre-migration archive raises rather than
     silently supplying the half-cell-biased `sw`, which is the failure mode
     that put two conventions into one paper.
@@ -58,7 +58,7 @@ def _safe_load(path: Path) -> dict | None:
         z = np.load(path, allow_pickle=True)
         if "sw_endpoint" not in z.files:
             raise CoordConventionError(
-                f"{path} predates the node-centred coordinate convention. "
+                f"{path} predates the node-centered coordinate convention. "
                 f"Its `sw` carries a half-cell sampling bias. Run "
                 f"`python scripts/migrate_archive.py --src <v1> --dst <v2>`."
             )

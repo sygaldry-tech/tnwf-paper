@@ -138,9 +138,9 @@ def complex_to_rgb(psi: np.ndarray) -> np.ndarray:
 
 
 def amp_colormap() -> mcolors.ListedColormap:
-    """Amplitude colourbar: white -> reference colour at arg=0
+    """Amplitude colorbar: white -> reference color at arg=0
     (cb_cyclic at t=0.5, which is orange #E69F00). Matches the
-    centre colorbar in the source PNG."""
+    center colorbar in the source PNG."""
     ref_rgb = np.array(_CB_CYCLIC(0.5)[:3])
     t = np.linspace(0, 1, 256)
     rgb = np.clip((1.0 - t[:, None]) + t[:, None] * ref_rgb[None, :], 0, 1)

@@ -62,7 +62,7 @@ class TestAnalyticV:
         """At t=1, the (1-t)/t·log p_t term vanishes; V_t reduces to ||x_centred||²/2."""
         L = 8.0     # gmm_2d default
         V_fn = make_analytic_V_fn("gmm_2d", t_eps=1e-3)
-        x_world = np.array([[5.0, 3.0]])              # centred → (1, -1)
+        x_world = np.array([[5.0, 3.0]])              # centered → (1, -1)
         x_centred = x_world - L / 2.0
         V = V_fn(x_world, t=1.0)
         # At t=1 with t_eps=1e-3, t_eff is 1.0 (no floor needed). Expected:

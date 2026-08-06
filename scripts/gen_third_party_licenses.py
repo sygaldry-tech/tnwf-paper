@@ -101,7 +101,7 @@ def from_installed(name: str) -> str | None:
     lic = (m.get("License") or "").strip()
     if not lic:
         return None
-    # Some projects paste their entire licence text into this field.
+    # Some projects paste their entire license text into this field.
     return lic.splitlines()[0][:60]
 
 

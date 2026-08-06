@@ -15,7 +15,7 @@ Two deliberate choices:
   rather than copied from the source tree, so `make verify-data` on an unpacked
   copy checks the archive rather than the tree it was built from.
 
-Reproducibility: members are added in sorted order with normalised metadata
+Reproducibility: members are added in sorted order with normalized metadata
 (fixed mtime, uid/gid 0, mode 0644/0755), and gzip is invoked with mtime=0, so
 byte-identical inputs give a byte-identical tarball and therefore a stable
 sha256.

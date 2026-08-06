@@ -4,7 +4,7 @@ The wavefunction is represented by its values *at* grid nodes ``x_i = i·dx``:
 ``make_grid`` uses ``linspace(0, L, N, endpoint=False)``, ``build_V_mpo``
 queries V at those same nodes, the pseudospectral K-step treats the array as
 function samples, and the trained MPS-V indexes ``(x/dx) % N``. So ``|ψ_i|²``
-is the mass of the cell *centred* on ``x_i``, and a Born sample drawn in cell
+is the mass of the cell *centered* on ``x_i``, and a Born sample drawn in cell
 ``i`` must be dithered symmetrically about the node:
 
     x = (i + U(-1/2, +1/2))·dx        # cell_centre_v2   (unbiased)
@@ -51,7 +51,7 @@ SCHEMA = 2
 #: a rigid ``+dx/2`` bias per axis and needs ``-dx/2`` to be read correctly.
 CONV_NODE = "node_lower_left_v1"
 
-#: Samples already on the node-centred convention: ``x = (i + U(-½,+½))·dx``,
+#: Samples already on the node-centered convention: ``x = (i + U(-½,+½))·dx``,
 #: or coordinates that were never grid-binned at all. Needs no further shift.
 CONV_CELL = "cell_centre_v2"
 
@@ -141,7 +141,7 @@ def convention_of(z, path: Path | str | None = None) -> str:
 def resolve_shift(z, dx: float, path: Path | str | None = None) -> float:
     """Return the additive correction to apply to this file's coordinates.
 
-    ``0.0`` when the coordinates are already node-centred, ``-dx/2`` when they
+    ``0.0`` when the coordinates are already node-centered, ``-dx/2`` when they
     still carry the v1 right-dither. Never returns a silent default.
     """
     conv = convention_of(z, path)

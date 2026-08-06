@@ -3,7 +3,7 @@
 This module had no test coverage at all, despite `method="mps_v_tdvp2"` being the
 path behind Table 2 and the rare-event figure. The realignment in
 `make_mps_v_provider` is the specific place an off-by-one would hide: the model
-represents V on a grid centred at the origin while the V-step indexes [0, L), and
+represents V on a grid centered at the origin while the V-step indexes [0, L), and
 the two are reconciled by a single `np.roll(c, N//2)`.
 """
 from __future__ import annotations
@@ -92,7 +92,7 @@ class TestCoresMatchForward:
 class TestProviderRealignment:
     def test_roll_maps_world_index_to_centred_coordinate(self):
         """provider(t) cores, indexed on [0, L), must equal the model at the
-        corresponding centred coordinate x - L/2.
+        corresponding centered coordinate x - L/2.
 
         A wrong roll direction (or an N//2 vs (N+1)//2 slip) would displace the
         potential by half the box and is exactly the class of error that would
@@ -108,14 +108,14 @@ class TestProviderRealignment:
         rng = np.random.default_rng(1)
         for _ in range(8):
             idx = rng.integers(0, N, size=d)
-            # World-frame grid point i·dx maps to the centred coordinate
+            # World-frame grid point i·dx maps to the centered coordinate
             # i·dx - L/2, which is what the model was trained on.
             x_centred = idx * dx - L / 2
             x = torch.tensor(x_centred[None, :], dtype=torch.float32)
             with torch.no_grad():
                 expected = float(m(x, torch.tensor([t]))[0, 0])
             assert np.isclose(_contract(cores, idx).real, expected, atol=1e-4), (
-                f"idx={idx} rolled core != model at centred x={x_centred}"
+                f"idx={idx} rolled core != model at centered x={x_centred}"
             )
 
     def test_grid_mismatch_is_rejected(self):

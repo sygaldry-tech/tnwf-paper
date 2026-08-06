@@ -82,7 +82,7 @@ def sinkhorn_ot_pairs(
     the entropy-regularised cost. The pairing is greedy: for each i, pick
     ``j = argmax_j P[i, j]`` and remove that column. With ``epsilon → 0`` this
     approaches the true OT assignment; with larger ``epsilon`` it's smoother
-    and the optimisation is more stable.
+    and the optimization is more stable.
 
     Pairs returned this way still keep ``∇V`` from a scalar potential, so the
     conservative-velocity constraint is preserved — the OT coupling only
@@ -92,7 +92,7 @@ def sinkhorn_ot_pairs(
     # Squared-Euclidean cost (B, B)
     diff = x0.unsqueeze(1) - x1.unsqueeze(0)
     C = (diff ** 2).sum(dim=-1)
-    # Normalise C to median magnitude for numerical stability across batch sizes
+    # Normalize C to median magnitude for numerical stability across batch sizes
     C = C / (C.median() + 1e-12)
 
     log_K = -C / epsilon                                       # (B, B)
@@ -104,7 +104,7 @@ def sinkhorn_ot_pairs(
     log_P = log_K + log_u.unsqueeze(1) + log_v.unsqueeze(0)    # log of transport plan
 
     # Exact bijective assignment via the Hungarian algorithm on the cost
-    # surface ``-log_P`` (i.e. minimise the regularised transport cost).
+    # surface ``-log_P`` (i.e. minimize the regularised transport cost).
     # scipy's C implementation is far faster than a Python greedy loop
     # at B≈256 (≪1 ms vs ~100 ms).
     from scipy.optimize import linear_sum_assignment

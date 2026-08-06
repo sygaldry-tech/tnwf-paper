@@ -139,7 +139,7 @@ def train(
     sample_kw = {k: v for k, v in cfg.items() if k not in _META_KEYS}
 
     if kind == "endpoint":
-        # source = N(0, I); target = pre-sampled snapshot in centred frame
+        # source = N(0, I); target = pre-sampled snapshot in centered frame
         target = sample_target(
             dataset, cfg["n_samples"], d=cfg["d"], seed=seed, **sample_kw
         )
@@ -279,7 +279,7 @@ def sample_gradient_flow(
 
     Args:
         model:      trained ScalarPotentialMLP
-        z:          (B, d) initial source samples (model coords, centred at 0)
+        z:          (B, d) initial source samples (model coords, centered at 0)
         n_steps:    number of Euler steps over t ∈ [0, 1]
         save_every: if given, return (n_snapshots+1, B, d) including initial state.
                     Otherwise return (B, d) final samples only.
@@ -317,7 +317,7 @@ def sample_gradient_flow(
 def make_V_fn(model: ScalarPotentialMLP, device: str | None = None):
     """Wrap a torch model as V_fn(x_np, t_float) → (M,) np.float64 (for tt_cross/Dense V_grid).
 
-    Maps grid coordinates in [0, L) to model coordinates centred at 0 (model's
+    Maps grid coordinates in [0, L) to model coordinates centered at 0 (model's
     sin/cos input encoding is periodic so any shift is consistent — but the
     the research prototype convention shifts by L/2, so we follow that).
     """

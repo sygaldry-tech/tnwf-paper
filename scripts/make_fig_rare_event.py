@@ -9,7 +9,7 @@ Pipeline
    original pickles so this repository ships no `pickle` payloads),
    and draw Born samples from those cores with `tnwf.pipelines.run_evolution.sample_from_mps`.
    Samples are
-   pooled across the independent MPS-V initialisations (reps) the paper averages over.
+   pooled across the independent MPS-V initializations (reps) the paper averages over.
    [--source npz falls back to the older, reduced K=40/D_max=16 trajectory npz.]
 
    Note on SW: Born samples are dithered about the grid node (`tnwf.coords`), so the
@@ -21,7 +21,7 @@ Pipeline
 
 2. Rare-event tails: standard multivariate 3-sigma rule -- a sample is a tail event for its
    nearest mode k iff ||x - c_k|| > TAIL_K * sigma (Mahalanobis radius, isotropic). Samples
-   closer to the domain centre than to any mode are flagged as **residual** (untransported
+   closer to the domain center than to any mode are flagged as **residual** (untransported
    source mass) and excluded from the tail amplitude.
 
 3. Estimate the tail probability with the **MLQAE algorithm** (Suzuki 2020, `tnwf.qae`)
@@ -68,14 +68,14 @@ from matplotlib.lines import Line2D  # noqa: E402
 
 
 def sample_wf_coords_from_mps(mps, n, N, d, L, rng):
-    """Born samples in the CENTRED physical frame [-L/2, L/2]^d.
+    """Born samples in the CENTERED physical frame [-L/2, L/2]^d.
 
     `tnwf.pipelines.run_evolution.sample_from_mps` returns grid-frame coordinates
-    spanning [-dx/2, L-dx/2)^d -- node-centred, see `tnwf.coords`. This module,
-    like `gm_mode_centers` below, works in the centred world frame, so the L/2
+    spanning [-dx/2, L-dx/2)^d -- node-centered, see `tnwf.coords`. This module,
+    like `gm_mode_centers` below, works in the centered world frame, so the L/2
     offset must be removed. That is the same conversion the `--source npz` branch
     applies to `samples_T`, and it matters: without it every sample is displaced
-    by L/2 and the tail labelling silently breaks.
+    by L/2 and the tail labeling silently breaks.
     """
     return sample_from_mps(mps, N=N, d=d, L=L, n=n, rng=rng) - L / 2.0
 
@@ -89,10 +89,10 @@ NPZ_FALLBACK = os.path.join(PAPER_DIR, "fallback_K40_D16.npz")
 
 D = 8
 N = 32                 # spatial grid (paper config); dx = L/N
-L = 8.0                # domain edge; centred physical frame is [-L/2, L/2]^d
+L = 8.0                # domain edge; centered physical frame is [-L/2, L/2]^d
 DX = L / N
 SIGMA = 0.5            # GMM component std
-SCALE = 3.0            # mode separation (centres at +-SCALE on each axis)
+SCALE = 3.0            # mode separation (centers at +-SCALE on each axis)
 DEFAULT_TAIL_K = 4.0   # rare-event threshold in units of sigma (the paper's value)
 N_WF = 4000            # total pooled WF Born samples
 N_TARGET = 4000        # target GMM samples
@@ -116,7 +116,7 @@ def _pct(x: float) -> str:
 
 
 def gm_mode_centers() -> np.ndarray:
-    """Orthogonal centres at +-SCALE.e_j (centred physical frame)."""
+    """Orthogonal centers at +-SCALE.e_j (centered physical frame)."""
     C = np.zeros((2 * D, D))
     for j in range(D):
         C[2 * j, j] = SCALE
@@ -139,9 +139,9 @@ def sliced_wasserstein(a, b, n_proj=128, seed=0) -> float:
 # Stage 1 -- WF Born samples from the paper's V-MPS 2TDVP state
 # ============================================================================
 def load_wf_samples(source: str, seed: int):
-    """Return (wf, target, sw_stats) in the centred [-L/2, L/2]^d frame.
+    """Return (wf, target, sw_stats) in the centered [-L/2, L/2]^d frame.
 
-    wf is on the node-centred convention (`tnwf.coords.CONV_CELL`) and needs no
+    wf is on the node-centered convention (`tnwf.coords.CONV_CELL`) and needs no
     further shift; `sw_stats` also reports what the v1 convention would give.
     """
     rng = np.random.default_rng(seed)
@@ -160,7 +160,7 @@ def load_wf_samples(source: str, seed: int):
         for d_ in reps:
             z = np.load(d_)
             mps = [z[f"core{j}"] for j in range(int(z["n_cores"]))]
-            x = sample_wf_coords_from_mps(mps, per, N, D, L, rng)  # centred
+            x = sample_wf_coords_from_mps(mps, per, N, D, L, rng)  # centered
             chunks.append(x)
             stored_unb.append(float(z["sw_unbiased_final"]))
         wf = np.vstack(chunks)[:N_WF]
@@ -202,19 +202,19 @@ def load_wf_samples(source: str, seed: int):
 
 
 # ============================================================================
-# Stage 2 -- rare-event (k-sigma) tail labelling, residual separation
+# Stage 2 -- rare-event (k-sigma) tail labeling, residual separation
 # ============================================================================
 def label_tails(samples, centers, tail_k):
     """Nearest-mode radial k-sigma rule with residual-mass separation.
 
-    residual  = closer to the domain centre (origin) than to any mode.
+    residual  = closer to the domain center (origin) than to any mode.
     rare tail = non-residual and nearest-mode distance > tail_k*sigma.
     Returns (nearest_mode, nearest_dist, tail_mask, residual_mask).
     """
     dist = np.linalg.norm(samples[:, None, :] - centers[None, :, :], axis=-1)
     nearest = dist.argmin(axis=1)
     nearest_dist = dist.min(axis=1)
-    dist_center = np.linalg.norm(samples, axis=1)   # centred frame: origin
+    dist_center = np.linalg.norm(samples, axis=1)   # centered frame: origin
     residual = dist_center < nearest_dist
     tail = (nearest_dist > tail_k * SIGMA) & (~residual)
     return nearest, nearest_dist, tail, residual
@@ -394,11 +394,11 @@ def _draw_sampling_tsne(ax_l, ax_r, wf, seed, tail_k, budget=1000):
     C = gm_mode_centers()
 
     wf = np.asarray(wf, dtype=float)
-    # Use the module's own labelling rather than an inline nearest-mode test.
+    # Use the module's own labeling rather than an inline nearest-mode test.
     # label_tails excludes *residual* mass -- samples nearer the origin than any
     # mode, i.e. source density the flow never transported. Those are not rare
     # events, they are failures to move, and the a_wf this figure reports
-    # already excludes them. Labelling them here as well would have drawn ~2.5
+    # already excludes them. Labeling them here as well would have drawn ~2.5
     # percentage points of untransported mass as successful tail samples, which
     # shows up as a clump of mixed-mode points sitting in the middle of the
     # embedding belonging to no cluster.

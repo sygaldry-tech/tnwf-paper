@@ -2,7 +2,7 @@
 
 Trained-V 2TDVP scaling runs at MPS-V D=8, sigma=0.5, fixed K=160, for d in
 {8, 12, 16, 32}. Columns: dimension d; oracle parameter count; endpoint
-sliced-Wasserstein SW^wf_T (mean +/- 95% CI over n=10 MPS-V initialisations);
+sliced-Wasserstein SW^wf_T (mean +/- 95% CI over n=10 MPS-V initializations);
 the classical action-matching floor SW^cl_T; and the achieved bond range chi*.
 
 Inputs (both ship in the data archive, not in this repository):

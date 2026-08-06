@@ -11,11 +11,11 @@ import numpy as np
 
 
 def density_from_psi(psi: np.ndarray) -> np.ndarray:
-    """|ψ|² normalised to sum to 1. Accepts complex or real ψ; returns flat float64."""
+    """|ψ|² normalized to sum to 1. Accepts complex or real ψ; returns flat float64."""
     rho = np.abs(np.asarray(psi).ravel()) ** 2
     total = rho.sum()
     if total <= 0:
-        raise ValueError("|ψ|² sums to zero — cannot normalise")
+        raise ValueError("|ψ|² sums to zero — cannot normalize")
     return rho / total
 
 

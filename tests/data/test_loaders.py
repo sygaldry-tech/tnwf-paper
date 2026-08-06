@@ -30,7 +30,7 @@ class TestSwissRoll:
 
     def test_normalized_scale(self):
         x = sample_swiss_roll(2048, seed=0)
-        # data is normalised to unit per-axis std
+        # data is normalized to unit per-axis std
         np.testing.assert_allclose(x.std(axis=0), 1.0, atol=1e-6)
 
 

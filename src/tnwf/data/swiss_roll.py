@@ -5,7 +5,7 @@ import numpy as np
 
 
 def sample_swiss_roll(n_samples: int, noise: float = 0.1, seed: int | None = None) -> np.ndarray:
-    """Return (n_samples, 2) float32 swiss-roll points, normalised to unit per-axis std."""
+    """Return (n_samples, 2) float32 swiss-roll points, normalized to unit per-axis std."""
     rng = np.random.default_rng(seed)
     t = 1.5 * np.pi * (1 + 2 * rng.uniform(size=n_samples))
     x = t * np.cos(t)

@@ -84,7 +84,7 @@ class TestTruncateMps:
 @pytest.mark.needle
 class TestRightCanonicalize:
     def test_preserves_state(self):
-        # Right-canonicalisation is gauge-only: |ψ⟩ unchanged.
+        # Right-canonicalization is gauge-only: |ψ⟩ unchanged.
         rng = np.random.default_rng(0)
         d, N = 3, 4
         v = rng.standard_normal(N**d) + 1j * rng.standard_normal(N**d)

@@ -4,7 +4,7 @@ Loads a trained MPS-V (tensor-train velocity potential), runs the 2-site TDVP
 V-step with the trained cores fed directly — no runtime tensor-cross — and saves
 the sampled trajectory plus metrics to an ``.npz`` the demo notebook can load.
 
-The reported accuracy is the sliced-Wasserstein on node-centred Born samples
+The reported accuracy is the sliced-Wasserstein on node-centered Born samples
 (see ``tnwf.coords``): the sampler dithers symmetrically about the grid node, so
 no half-cell correction is applied here. Releases up to v1 dithered to the right
 of the node and compensated at this point instead; the ``sw_unbiased`` key name
@@ -63,7 +63,7 @@ def main() -> None:
 
     L, N = float(r["L"]), int(r["N"])
     target = np.asarray(r["target"], dtype=np.float64)
-    # Samples are already node-centred (tnwf.coords), so no half-cell shift is
+    # Samples are already node-centered (tnwf.coords), so no half-cell shift is
     # applied here. `sw_unbiased` is retained as a key name because the shipped
     # v1 artifact and the demo notebook read it; under the current convention it
     # is simply the SW, identical to `sw`.

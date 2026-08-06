@@ -31,7 +31,7 @@ from tnwf.jam.train import DATASET_DEFAULTS
 def gmm_velocity(x, t, *, centers, component_var, sigma_0,
                   weights=None):
     """v_t(x) = x/t + (1-t) sigma_0^2 / t * grad log p_t(x), with mu_0 = 0
-    in the centred frame.
+    in the centered frame.
 
     Closed-form score for an isotropic Gaussian mixture:
         p_t(x) = (1/K) sum_k N(x; t c_k, sigma_t^2 I).
@@ -123,7 +123,7 @@ def main():
                                     constrained_layout=True)
     fig.set_constrained_layout_pads(w_pad=0.10)
 
-    # Okabe-Ito colourblind-safe palette, ordered cool->warm by time.
+    # Okabe-Ito colorblind-safe palette, ordered cool->warm by time.
     palette = ["#0072B2", "#009E73", "#E69F00", "#D55E00"]
 
     for ax in (axA, axB):

@@ -10,7 +10,7 @@ def gm_mode_centers(
     scale: float = 3.0,
     arrangement: str = "orthogonal",
 ) -> np.ndarray:
-    """Return mode centres. Shape (2d, d) for orthogonal, (nmodes, 2) for symmetric (d=2)."""
+    """Return mode centers. Shape (2d, d) for orthogonal, (nmodes, 2) for symmetric (d=2)."""
     if arrangement == "symmetric":
         if d != 2:
             raise ValueError("arrangement='symmetric' requires d=2")

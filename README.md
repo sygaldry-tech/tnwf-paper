@@ -207,10 +207,10 @@ filename (`figures/fig_rare_event_advantage.pdf`) directly and defaults to the
 paper's `--tail-k 4.0`, so a bare `python scripts/make_fig_rare_event.py`
 reproduces the figure. Takes ~40 s.
 
-**Fig 5 palette.** The colour stops in `make_fig3_tsne_grid.py` are pinned as
+**Fig 5 palette.** The color stops in `make_fig3_tsne_grid.py` are pinned as
 explicit magma triples (LUT indices 38 / 128 / 199) rather than `plt.cm.magma(f)`
 calls. magma is a 256-entry lookup table, so `magma(f)` is piecewise constant in
-`f` and an approximate `f` lands on a neighbouring stop. Leave them pinned.
+`f` and an approximate `f` lands on a neighboring stop. Leave them pinned.
 
 ## Layout
 

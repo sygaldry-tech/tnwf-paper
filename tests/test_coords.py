@@ -28,8 +28,8 @@ def _psi_from_density(rho: np.ndarray) -> np.ndarray:
 
 
 @pytest.mark.needle
-class TestSamplersAreNodeCentred:
-    """Samples must be centred on the node, not on the cell to its right."""
+class TestSamplersAreNodeCentered:
+    """Samples must be centered on the node, not on the cell to its right."""
 
     def test_psi_grid_recovers_node_mean(self):
         # ψ concentrated on a single node: the sample mean must be that node's
@@ -45,7 +45,7 @@ class TestSamplersAreNodeCentred:
         expected = np.array([3, 5]) * dx
         # Dither is U(-dx/2, dx/2), so the mean converges to the node itself.
         np.testing.assert_allclose(samples.mean(axis=0), expected, atol=0.02)
-        # And the support is the cell centred on the node.
+        # And the support is the cell centered on the node.
         assert np.all(np.abs(samples - expected) <= dx / 2 + 1e-12)
 
     def test_mps_sampler_recovers_node_mean(self):
@@ -64,7 +64,7 @@ class TestSamplersAreNodeCentred:
         """The sharpest discriminator: cell 0 must straddle the origin.
 
         Under `x = (i + U(0,1))·dx` every coordinate is >= 0 by construction, so
-        a single negative sample is proof of the node-centred convention.
+        a single negative sample is proof of the node-centered convention.
         """
         N, d, L = 4, 1, 4.0
         rho = np.zeros(N)

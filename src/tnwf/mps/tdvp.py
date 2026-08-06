@@ -26,7 +26,7 @@ def _robust_svd(mat: np.ndarray, full_matrices: bool = False):
       1. ``np.linalg.svd`` (gesdd, fast happy path).
       2. ``scipy.linalg.svd`` with ``gesvd`` driver (slower, more stable).
       3. Sanitise NaN/Inf via ``np.nan_to_num``, retry gesvd.
-      4. Normalise by max-abs so the dynamic range fits in float64's
+      4. Normalize by max-abs so the dynamic range fits in float64's
          well-scaled regime, SVD, scale singular values back.
       5. Add a tiny diagonal regulariser (1e-14 · max-abs) and retry.
 

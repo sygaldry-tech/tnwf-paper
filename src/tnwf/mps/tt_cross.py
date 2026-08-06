@@ -18,7 +18,7 @@ from tnwf.mps.core import truncate_mps
 
 
 def _maxvol_pivot_rows(F: np.ndarray, D_max: int) -> np.ndarray:
-    """Greedy pivoted-QR-style row selection: up to D_max rows that maximise volume.
+    """Greedy pivoted-QR-style row selection: up to D_max rows that maximize volume.
 
     O(D_max · M · min(M, K)) selection on (M, K) matrix. Equivalent to MAXVOL.
     """
@@ -248,7 +248,7 @@ def tt_cross(
         if sweep < n_sweeps - 1:
             right_idx = _update_right_indices(fn, left_idx, right_idx, N, d, D_max, out_dtype)
 
-    # Global-pivot refinement rounds (off by default; n_global=0 → behaviour
+    # Global-pivot refinement rounds (off by default; n_global=0 → behavior
     # unchanged). Native analog of xfac TensorCI2.addPivotsAllBonds: find
     # worst-residual configs over a candidate pool, inject their right suffixes
     # at every bond, and re-sweep. Recovers modes a local sweep misses; bounded

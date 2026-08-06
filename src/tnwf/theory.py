@@ -37,14 +37,14 @@ def _gmm_log_density(
     component_var: float,
     sigma_0: float,
 ) -> np.ndarray:
-    """Log-density of the Gaussian-mixture interpolant p_t(x) at centred coords.
+    """Log-density of the Gaussian-mixture interpolant p_t(x) at centered coords.
 
     p_t(x) = Σ_k w_k · N(x; t c_k, σ_t² I)  with  σ_t² = (1-t)² σ_0² + t² σ_k².
 
     Args:
-        x_centred:      (n, d) points in centred frame (data near origin).
+        x_centred:      (n, d) points in centered frame (data near origin).
         t:              time in (0, 1].
-        centers:        (K, d) mode centres.
+        centers:        (K, d) mode centers.
         weights:        (K,) mixture weights, sum to 1.
         component_var:  σ_k² (assumed isotropic and equal across modes).
         sigma_0:        source std σ_0.
