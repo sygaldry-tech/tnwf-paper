@@ -423,6 +423,18 @@ def resolve_source_sigma(method: str, L: float, sigma: float | None) -> float:
     return SOURCE_SIGMA_ANALYTIC_V
 
 
+def checkpoint_source_sigma(ckpt_args: dict, L: float) -> float:
+    """Source width an MPS-V checkpoint was fit against.
+
+    Checkpoints written before the trainer took a `sigma0` argument record the
+    key with value ``None`` rather than omitting it, so `dict.get(key, default)`
+    returns None and any float() on it raises. Anything reading a checkpoint's
+    source width must go through here; doing it inline is how that bug got in.
+    """
+    s = ckpt_args.get("sigma_0") if isinstance(ckpt_args, dict) else None
+    return float(s) if s is not None else resolve_source_sigma("mps_v", L, None)
+
+
 def run(
     method: Method,
     dataset: str,

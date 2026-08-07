@@ -16,10 +16,15 @@ error is in the learned potential and no amount of Trotter refinement or bond
 dimension will fix it -- the tensor network is faithfully transporting a
 velocity field that is itself wrong in the tails.
 
-Measured on the shipped d=8 checkpoint, the answer is that the oracle carries
-essentially all of it: target 4.08%, grid 3.98%, + oracle 8.12%, + transport
-9.38%. Sliced-Wasserstein does not see this, because it is dominated by bulk
-transport.
+Measured on the shipped d=8 checkpoint: target 4.08%, grid 3.98%, + oracle
+8.12%, + transport 9.38%. The learned oracle carries 76% of the excess and the
+tensor network adds 1.15x on top, so the dominant term is the potential, not
+the transport.
+
+The reported width error explains it stage by stage: +7.16% at the oracle
+predicts a 1.97x tail against 1.99x observed, +8.71% after transport predicts
+2.23x against 2.30x. Sliced-Wasserstein registers none of this, being dominated
+by bulk transport.
 
 Usage:
     uv run python scripts/diagnose_tail_error.py
@@ -43,14 +48,17 @@ from make_fig_rare_event import (  # noqa: E402
 )
 from tnwf.data.gaussian_mixture import sample_gaussian_mixture  # noqa: E402
 from tnwf.mps_v.model import MPSScalarPotentialTimeSite  # noqa: E402
+from tnwf.metrics.modes import mode_width, predicted_tail_ratio  # noqa: E402
+from tnwf.pipelines.run_evolution import checkpoint_source_sigma  # noqa: E402
 
 TAIL_K = 4.0
 C = gm_mode_centers()
 
 
-def tail_pct(x) -> tuple[float, float]:
+def tail_pct(x) -> tuple[float, float, float]:
+    """(tail %, residual %, effective mode width)."""
     _, _, tail, resid = label_tails(np.asarray(x, float), C, TAIL_K)
-    return 100 * tail.mean(), 100 * resid.mean()
+    return 100 * tail.mean(), 100 * resid.mean(), mode_width(x, C)
 
 
 def exact_grid_samples(n: int, rng) -> np.ndarray:
@@ -84,7 +92,9 @@ def classical_flow(ckpt: str, n: int, Kref: int = 160, sub: int = 4) -> np.ndarr
     m.load_state_dict(ck["model"])
     m.eval()
     # The source the oracle was fit against; mismatching it costs ~5x in SW.
-    s0 = float(a.get("sigma_0", L / 6.0))
+    # Shipped checkpoints record sigma_0 as None rather than omitting it, so a
+    # plain .get(key, default) returns None -- hence the shared helper.
+    s0 = checkpoint_source_sigma(a, L)
     g = torch.Generator().manual_seed(0)
     x = s0 * torch.randn(n, D, generator=g)
     dt = 1.0 / (Kref * sub)
@@ -122,15 +132,27 @@ def main() -> None:
     rows.append(("+ grid discretization", *tail_pct(exact_grid_samples(a.n, rng))))
     print("  integrating the classical flow ...", flush=True)
     rows.append(("+ learned oracle (classical ODE)", *tail_pct(classical_flow(ckpt, a.n))))
+    # load_wf_samples always pools N_WF (4000) samples regardless of -n, so
+    # subsample to match. A tail fraction is a small-count statistic and
+    # comparing a 4000-sample row against a 600-sample one is not like for like.
     wf, _, _ = load_wf_samples("paper", 0)
+    if len(wf) > a.n:
+        wf = wf[rng.choice(len(wf), a.n, replace=False)]
     rows.append(("+ tensor-network transport", *tail_pct(wf)))
 
     base = rows[0][1]
     print(f"\n  >{TAIL_K:g} sigma tail fraction, d={D} orthogonal GMM, N={N}\n")
-    print(f"  {'stage':34s} {'tail':>7s} {'x target':>9s} {'residual':>9s}")
-    print("  " + "-" * 62)
-    for label, tail, resid in rows:
-        print(f"  {label:34s} {tail:6.2f}% {tail/base:8.2f}x {resid:8.2f}%")
+    print(f"  {'stage':34s} {'tail':>7s} {'x target':>9s} {'residual':>9s} "
+          f"{'width err':>10s} {'width->tail':>12s}")
+    print("  " + "-" * 88)
+    w_ref = rows[0][3]
+    for label, tail, resid, w in rows:
+        werr = w / w_ref - 1.0
+        pred = predicted_tail_ratio(werr, D, TAIL_K)
+        print(f"  {label:34s} {tail:6.2f}% {tail/base:8.2f}x {resid:8.2f}% "
+              f"{100*werr:+9.2f}% {pred:11.2f}x")
+    print("\n  'width->tail' is the ratio that width error alone would produce;"
+          "\n  where it matches the observed ratio, the excess IS width inflation.")
 
     oracle, transport = rows[2][1], rows[3][1]
     print(f"\n  oracle accounts for   {(oracle-base)/(transport-base)*100:.0f}% "
