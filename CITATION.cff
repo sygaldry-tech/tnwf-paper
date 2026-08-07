@@ -7,10 +7,30 @@ abstract: >-
   V-step of a wavefunction-flow evolution with tensor-network methods
   (TCI + TDVP).
 type: software
+# Author order and affiliations mirror sn-article.tex. Cochran and Veerapaneni
+# are jointly affiliated; CFF takes one affiliation per author, so each carries
+# the one listed first in the manuscript.
+# TODO(author): add ORCIDs (`orcid: "https://orcid.org/0000-..."` per author).
 authors:
-  # TODO(author): fill in the full author list, ORCIDs, and affiliations.
-  - given-names: TODO
-    family-names: TODO
+  - given-names: "Nathan X."
+    family-names: Kodama
+    email: nathan@sygaldry.com
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+  - given-names: "L. Andrew"
+    family-names: Wray
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+  - given-names: Sam
+    family-names: Cochran
+    affiliation: "University of Michigan, Ann Arbor, MI, USA"
+  - given-names: Chad
+    family-names: Rigetti
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+  - given-names: Shravan
+    family-names: Veerapaneni
+    affiliation: "University of Michigan, Ann Arbor, MI, USA"
+  - given-names: "Michael J."
+    family-names: Keiser
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
 repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
 license: MIT
 # The hyperparameter-sweep data this code consumes is archived separately.
@@ -23,8 +43,25 @@ preferred-citation:
   type: article
   title: "Scalable quantum simulation of continuous-time generative models via tensor networks"
   authors:
-    - given-names: TODO
-      family-names: TODO
+    - given-names: "Nathan X."
+      family-names: Kodama
+      email: nathan@sygaldry.com
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    - given-names: "L. Andrew"
+      family-names: Wray
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    - given-names: Sam
+      family-names: Cochran
+      affiliation: "University of Michigan, Ann Arbor, MI, USA"
+    - given-names: Chad
+      family-names: Rigetti
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    - given-names: Shravan
+      family-names: Veerapaneni
+      affiliation: "University of Michigan, Ann Arbor, MI, USA"
+    - given-names: "Michael J."
+      family-names: Keiser
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
   journal: "npj Quantum Information"  # TODO(author): confirm on acceptance
   year: 2026                          # TODO(author): update
   # doi: TODO
