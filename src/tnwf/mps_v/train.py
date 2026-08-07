@@ -39,13 +39,15 @@ def train(
     lr: float = 1e-3,
     d: int | None = None,
     L: float | None = None,
+    sigma0: float | None = None,
     loss_name: str = "jam",
     log_every: int = 1000,
 ) -> dict:
     """Train an MPS-V on an endpoint dataset and save a checkpoint to out_path.
 
     The checkpoint dict is `{"model", "args", "model_type"}` — the format read
-    by `tnwf.mps_v.load_mps_v`. Source samples are N(0, I); the target GMM is in
+    by `tnwf.mps_v.load_mps_v`. Source samples are N(0, sigma0^2 I) with sigma0
+    defaulting to the width the evaluation path uses; the target GMM is in
     the centered frame, so the learned cores are centered (the V-step provider
     re-centers them to the [0, L) grid).
     """
@@ -57,6 +59,17 @@ def train(
         cfg["L"] = L
     d = int(cfg["d"])
     L = float(cfg["L"])
+    # Width of the Gaussian source the oracle is fit against. This has to match
+    # the source the flow is later driven from: a velocity potential is only
+    # valid for the source it saw in training, and a mismatch costs about a
+    # factor 5 in endpoint SW. It used to be hardcoded to 1.0 here while the
+    # evaluation path used L/6, so anything trained with this function and run
+    # through `run(method="mps_v_tdvp2")` was driven from a source it had never
+    # seen. Defaults to the evaluation value and is recorded in the checkpoint.
+    if sigma0 is None:
+        from tnwf.pipelines.run_evolution import resolve_source_sigma
+        sigma0 = resolve_source_sigma("mps_v_tdvp2", L, None)
+    sigma0 = float(sigma0)
 
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -77,7 +90,7 @@ def train(
     for it in range(n_iter):
         idx = torch.randint(0, target_t.shape[0], (batch_size,), device=device)
         x1 = target_t[idx]
-        x0 = torch.randn(batch_size, d, device=device)
+        x0 = sigma0 * torch.randn(batch_size, d, device=device)
         t = torch.rand(batch_size, 1, device=device)
         opt.zero_grad()
         if loss_name == "jam":
@@ -98,6 +111,7 @@ def train(
         "args": {
             "d": d, "N_grid": N, "D_mps": D, "L": L, "N_t": N_t,
             "dataset": dataset, "seed": seed, "loss_name": loss_name,
+            "sigma_0": sigma0,
             "std": cfg.get("std"), "scale": cfg.get("scale"),
             "arrangement": "orthogonal", "qtt": False,
         },
@@ -122,6 +136,10 @@ def _main() -> None:
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--d", type=int, default=None)
     p.add_argument("--L", type=float, default=None)
+    p.add_argument("--sigma0", type=float, default=None,
+                   help="Gaussian source width; defaults to the value the "
+                        "evaluation path uses (L/6), so training and the flow "
+                        "cannot drift apart.")
     # "cfm" is the legacy spelling of "jam"; both select jam_conservative_loss.
     p.add_argument("--loss_name", choices=["jam", "cfm", "am"], default="jam")
     args = p.parse_args()
@@ -129,7 +147,7 @@ def _main() -> None:
         dataset=args.dataset, seed=args.seed, out_path=args.out,
         N=args.N, D=args.D, N_t=args.N_t, n_iter=args.n_iter,
         batch_size=args.batch_size, lr=args.lr, d=args.d, L=args.L,
-        loss_name=args.loss_name,
+        sigma0=args.sigma0, loss_name=args.loss_name,
     )
 
 
