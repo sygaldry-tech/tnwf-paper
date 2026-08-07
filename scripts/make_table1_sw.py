@@ -82,12 +82,18 @@ def uncertainty(cell: dict) -> float:
     return max(cands) if cands else float("nan")
 
 
-def fmt(v: float | None, err: float = float("nan")) -> str:
-    """Format as `0.115(6)`: the parenthesised digit is the 1-sigma spread in
-    units of the last decimal place. Compact enough for a seven-column table."""
+def fmt(v: float | None, err: float = float("nan"), show_spread: bool = False) -> str:
+    """Format a cell.
+
+    The spread is still computed and reported on stdout, because the caption's
+    statement that the two integrators are separated by less than it needs to
+    stay checkable -- but it is kept out of the table itself, which reads
+    better at seven columns. Pass --spread to typeset it as `0.115(6)`, the
+    parenthesised digit being the 1-sigma spread in units of the last decimal.
+    """
     if v is None:
         return "--"
-    if math.isnan(err):
+    if not show_spread or math.isnan(err):
         return f"{v:.3f}"
     return f"{v:.3f}({max(1, min(9, round(err * 1000)))})"
 
@@ -95,6 +101,9 @@ def fmt(v: float | None, err: float = float("nan")) -> str:
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--out", default="figures/table1_sw.tex")
+    p.add_argument("--spread", action="store_true",
+                   help="typeset the 1-sigma spread as 0.115(6); off by default, "
+                        "but always reported on stdout")
     args = p.parse_args()
 
     # Load Exact noise floor (precomputed by compute_exact_sw_floor.py).
@@ -137,7 +146,8 @@ def main():
             cells = []
             for d in DS_ALL:
                 v = table[m].get(d)
-                cells.append(fmt(*v) if v is not None else "--")
+                cells.append(fmt(*v, show_spread=args.spread) if v is not None
+                             else "--")
             lines.append(f"{label} & " + " & ".join(cells) + r" \\")
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")
@@ -146,6 +156,14 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(lines) + "\n")
 
+    # Report the spreads regardless, so the caption's claim about the
+    # integrators being separated by less than the noise stays verifiable.
+    spreads = [e for m in ROW_ORDER for v in table[m].values()
+               if v is not None for e in (v[1],) if not math.isnan(e)]
+    if spreads:
+        print(f"1-sigma spread across cells: min {min(spreads):.4f}  "
+              f"median {sorted(spreads)[len(spreads) // 2]:.4f}  "
+              f"max {max(spreads):.4f}")
     print(f"saved {out}")
     print()
     print("Preview:")
