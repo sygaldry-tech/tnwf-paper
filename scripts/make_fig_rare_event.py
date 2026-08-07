@@ -1,41 +1,50 @@
-"""End-to-end quadratic advantage of wavefunction flows on d=8 GMM rare-event tails.
+"""Rare-event sampling on the d=8 GMM: cost, and what a fixed budget harvests.
+
+Produces paper Fig. 8 as three square panels:
+
+  (a) sampling cost -- state preparations per accepted rare sample against the
+      rare-event probability p, for gradient flow + rejection sampling against
+      tensor-network transport + amplitude amplification. Both arms are built on
+      the SAME learned potential and each is costed on the state its own pipeline
+      produces, so this is a pipeline comparison.
+  (b) the rejection-sampling harvest at a fixed budget.
+  (c) the amplitude-amplification harvest at the same budget.
 
 Pipeline
 --------
-1. State prep = the paper's **V-MPS 2TDVP** flow on the d=8 orthogonal Gaussian mixture
-   (16 modes at +-3.e_j, sigma=0.5). We use the paper's *actual* Table-2 runs
-   (N=32, K=160, D_max=64, self-limiting bond chi*~=16; SW^wf_T ~= 0.036 unbiased),
-   shipped under `examples/rare_event/rep*.npz` (the final MPS cores; converted from the
-   original pickles so this repository ships no `pickle` payloads),
-   and draw Born samples from those cores with `tnwf.pipelines.run_evolution.sample_from_mps`.
-   Samples are
-   pooled across the independent MPS-V initializations (reps) the paper averages over.
-   [--source npz falls back to the older, reduced K=40/D_max=16 trajectory npz.]
+1. Quantum arm: the paper's V-MPS 2TDVP flow on the d=8 orthogonal Gaussian
+   mixture (16 modes at +-3.e_j, sigma=0.5), N=32, K=160, D_max=64, shipped as
+   final MPS cores under `examples/rare_event/rep*.npz`. Born samples are drawn
+   with `tnwf.pipelines.run_evolution.sample_from_mps` and pooled across the
+   independent MPS-V initializations the paper averages over.
 
-   Note on SW: Born samples are dithered about the grid node (`tnwf.coords`), so the
-   coordinates returned here need no half-cell correction. Releases up to v1 dithered
-   to the right of the node, inflating SW to ~0.11; that convention is reconstructed
-   and printed alongside as `sw_legacy_v1` so the size of the correction stays visible.
-   K=40 vs K=160 barely changes SW (the flow is Trotter-converged); the paper's low
-   number is this estimator plus D_max=64 headroom.
+   Note on SW: Born samples are dithered about the grid node (`tnwf.coords`), so
+   the coordinates need no half-cell correction. Releases up to v1 dithered to
+   the right of the node, inflating SW to ~0.11; that convention is reconstructed
+   and printed as `sw_legacy_v1` so the size of the correction stays visible.
 
-2. Rare-event tails: standard multivariate 3-sigma rule -- a sample is a tail event for its
-   nearest mode k iff ||x - c_k|| > TAIL_K * sigma (Mahalanobis radius, isotropic). Samples
-   closer to the domain center than to any mode are flagged as **residual** (untransported
-   source mass) and excluded from the tail amplitude.
+2. Classical arm: the same learned potential, integrated as a gradient flow
+   xdot = grad V. This is what makes the comparison fair -- the learning error is
+   common to both arms, so what differs is the transport and the sampling method.
+   Requires the MPS-V checkpoint from the Zenodo data release.
 
-3. Estimate the tail probability with the **MLQAE algorithm** (Suzuki 2020, `tnwf.qae`)
-   vs a classical Monte-Carlo baseline: Heisenberg slope -1 (MLQAE) vs -1/2 (MC).
+3. Rare events: nearest-mode k-sigma rule. Samples closer to the domain center
+   than to any mode are flagged residual (untransported source mass) and excluded
+   from the tail amplitude.
+
+4. Costs come from `tnwf.amp`, which chooses the Grover round count to minimize
+   expected preparations. There is no amplitude *estimation* here: on this state
+   the preparation bias exceeds the estimator's statistical error at every
+   reachable budget, so its query scaling is not usable.
 
 Deliverables (figures/)
-    fig_rare_event_advantage.{png,pdf}  paper Fig. 8, exactly as included by the
-                                        manuscript.
-    rare_event_qae.npz                  raw arrays + amplitudes + SW + slopes;
-                                        backs the caption's slopes and counts.
+    fig_rare_event_advantage.{png,pdf}  paper Fig. 8, as included by the manuscript
+    rare_event_advantage.npz            threshold sweep, amplitudes, SW, fitted
+                                        prefactors; backs the caption's numbers
 
 Run:
     make fig-rare-event
-    uv run python scripts/make_fig_rare_event.py [--tail-k 4.0] [--source paper|npz]
+    uv run python scripts/make_fig_rare_event.py [--tail-k 4.0] [--n-samples 40000]
 """
 from __future__ import annotations
 
@@ -52,10 +61,10 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 from tnwf import coords  # noqa: E402,I001
+from tnwf.amp import AMP_PREFACTOR, amp_cost  # noqa: E402
 from tnwf.data.gaussian_mixture import sample_gaussian_mixture  # noqa: E402
 from tnwf.metrics.sw import sliced_wasserstein as _sliced_wasserstein  # noqa: E402
 from tnwf.pipelines.run_evolution import sample_from_mps  # noqa: E402
-from tnwf.qae import classical_mc_estimate, mlqae_estimate  # noqa: E402
 
 # isort cannot merge these into the block above: `matplotlib.use("Agg")` must run
 # after `import matplotlib` but before `pyplot` is imported, so the backend is set
@@ -86,6 +95,7 @@ def sample_wf_coords_from_mps(mps, n, N, d, L, rng):
 OUT_DIR = os.path.join(_PROJECT_ROOT, "figures")
 PAPER_DIR = os.path.join(_PROJECT_ROOT, "examples/rare_event")  # Table-2 K=160 MPS cores
 NPZ_FALLBACK = os.path.join(PAPER_DIR, "fallback_K40_D16.npz")
+CKPT_DIR = os.path.join(_PROJECT_ROOT, "data/mps_v_checkpoints")
 
 D = 8
 N = 32                 # spatial grid (paper config); dx = L/N
@@ -94,17 +104,23 @@ DX = L / N
 SIGMA = 0.5            # GMM component std
 SCALE = 3.0            # mode separation (centers at +-SCALE on each axis)
 DEFAULT_TAIL_K = 4.0   # rare-event threshold in units of sigma (the paper's value)
-N_WF = 4000            # total pooled WF Born samples
-N_TARGET = 4000        # target GMM samples
+N_WF = 40000           # pooled Born samples per arm; the >4sigma tail is ~9% of this
+N_SW = 4000            # samples used for SW only -- see below
 SEED = 0
 
-# MLQAE vs MC sweep. Fixed shots-per-k, sweep the max Grover power M = 0..7 so the
-# MLQAE error keeps its clean 1/2^M (Heisenberg) scaling while the smallest budgets
-# (M=0,1 -> Q ~ 400,900) reach down to the MLQAE/MC crossover -- measured, not fit.
-N_SHOTS_PER_K = 100
-BUDGETS = [(M, N_SHOTS_PER_K) for M in range(8)]   # M = 0..7
-ASYMPTOTIC_Q = 1500.0   # fit the -1 / -1/2 slopes on points above this
-N_TRIALS = 201          # odd; more trials -> smoother medians at small budgets
+# SW is evaluated on a fixed N_SW subset rather than on all N_WF samples. The
+# estimator is sample-size dependent (more samples -> lower SW: 0.030 at 4k
+# against 0.019 at 40k on this same state), so computing it at the tail-statistics
+# sample count would silently change a number the manuscript compares against
+# Table 2. Tail fractions want as many samples as possible; SW wants comparability.
+
+THRESHOLDS = np.arange(2.5, 6.51, 0.25)   # k-sigma values swept in panel (a)
+TAIL_FIT_CUT = 0.20    # fit the amplification power law on p <= this (see below)
+BUDGET = 500           # state preparations, for the panel (b,c) harvest
+
+# Validated categorical pair; the paper's older #3b0f70/#8c8c8c fails the
+# lightness and chroma checks (the grey reads as absence of a series, not as one).
+C_Q, C_C = "#4a3aa7", "#eb6834"
 
 
 # ============================================================================
@@ -125,28 +141,19 @@ def gm_mode_centers() -> np.ndarray:
 
 
 def sliced_wasserstein(a, b, n_proj=128, seed=0) -> float:
-    """The paper's SW estimator: `tnwf.metrics.sw` at 128 projections.
-
-    This module used to carry its own 200-projection copy that reconciled
-    unequal cloud sizes by interpolation rather than truncation, which made
-    its numbers quietly incomparable with the pipeline's.
-    """
+    """The paper's SW estimator: `tnwf.metrics.sw` at 128 projections."""
     return float(_sliced_wasserstein(a, b, n_projections=n_proj,
                                      rng=np.random.default_rng(seed)))
 
 
 # ============================================================================
-# Stage 1 -- WF Born samples from the paper's V-MPS 2TDVP state
+# Stage 1 -- Born samples from the paper's V-MPS 2TDVP state
 # ============================================================================
-def load_wf_samples(source: str, seed: int):
-    """Return (wf, target, sw_stats) in the centered [-L/2, L/2]^d frame.
-
-    wf is on the node-centered convention (`tnwf.coords.CONV_CELL`) and needs no
-    further shift; `sw_stats` also reports what the v1 convention would give.
-    """
+def load_wf_samples(source: str, seed: int, n_wf: int = N_WF):
+    """Return (wf, target, sw_stats) in the centered [-L/2, L/2]^d frame."""
     rng = np.random.default_rng(seed)
     target = sample_gaussian_mixture(
-        N_TARGET, d=D, std=SIGMA, scale=SCALE, arrangement="orthogonal",
+        n_wf, d=D, std=SIGMA, scale=SCALE, arrangement="orthogonal",
         seed=1).astype(np.float64)
 
     if source == "paper":
@@ -155,54 +162,102 @@ def load_wf_samples(source: str, seed: int):
             raise FileNotFoundError(
                 f"No Table-2 MPS cores under {PAPER_DIR}; expected rep*.npz. "
                 "Use --source npz for the reduced K=40/D_max=16 fallback.")
-        per = int(np.ceil(N_WF / len(reps)))
+        per = int(np.ceil(n_wf / len(reps)))
         chunks, stored_unb = [], []
         for d_ in reps:
             z = np.load(d_)
             mps = [z[f"core{j}"] for j in range(int(z["n_cores"]))]
-            x = sample_wf_coords_from_mps(mps, per, N, D, L, rng)  # centered
-            chunks.append(x)
+            chunks.append(sample_wf_coords_from_mps(mps, per, N, D, L, rng))
             stored_unb.append(float(z["sw_unbiased_final"]))
-        wf = np.vstack(chunks)[:N_WF]
+        wf = np.vstack(chunks)[:n_wf]
         rng.shuffle(wf)
-        # sample_from_mps dithers about the node (tnwf.coords.CONV_CELL), so
-        # these coordinates are already unbiased — no half-cell correction here.
-        # The v1 convention is reconstructed only to report the correction size.
-        sw = sliced_wasserstein(wf, target)
-        sw_legacy = sliced_wasserstein(wf + DX / 2.0, target)
+        n_sw = min(N_SW, len(wf))
+        sw = sliced_wasserstein(wf[:n_sw], target[:n_sw])
+        sw_legacy = sliced_wasserstein(wf[:n_sw] + DX / 2.0, target[:n_sw])
         print(f"[load] paper Table-2 state: pooled {wf.shape[0]} Born samples over "
               f"{len(reps)} MPS-V reps (K=160, N={N}, D_max=64)", flush=True)
-        print(f"       SW={sw:.4f}  (v1 half-cell convention would give "
-              f"{sw_legacy:.4f})  "
-              f"(paper Table-2 per-rep mean={np.mean(stored_unb):.4f})",
-              flush=True)
+        print(f"       SW={sw:.4f} on n={n_sw} (v1 half-cell convention would "
+              f"give {sw_legacy:.4f})  "
+              f"(paper Table-2 per-rep mean={np.mean(stored_unb):.4f})", flush=True)
         sw_stats = dict(sw=sw, sw_legacy_v1=sw_legacy,
                         paper_unbiased_mean=float(np.mean(stored_unb)),
                         paper_unbiased_ci=float(1.96 * np.std(stored_unb)
                                                 / np.sqrt(len(stored_unb))),
-                        n_reps=len(reps), K=160, D_max=64)
+                        n_reps=len(reps), K=160, D_max=64, n_sw=n_sw)
     elif source == "npz":
         d = np.load(NPZ_FALLBACK)
-        # This is a shipped v1 artifact, so its stored samples still carry the
-        # half-cell bias. coords.resolve_shift reads the convention from the
-        # sidecar table rather than hard-coding a subtraction here; it returns
-        # 0.0 once the file is ever regenerated under the current convention.
         shift = coords.resolve_shift(d, DX, path=NPZ_FALLBACK)
         wf = d["samples_T"].astype(np.float64) - L / 2.0 + shift
-        sw = sliced_wasserstein(wf, target)
-        sw_legacy = sliced_wasserstein(wf + DX / 2.0, target)
+        n_sw = min(N_SW, len(wf))
+        sw = sliced_wasserstein(wf[:n_sw], target[:n_sw])
+        sw_legacy = sliced_wasserstein(wf[:n_sw] + DX / 2.0, target[:n_sw])
         print(f"[load] fallback npz (reduced K=40/D_max=16): {wf.shape[0]} samples; "
               f"SW={sw:.4f} (v1 convention {sw_legacy:.4f})", flush=True)
         sw_stats = dict(sw=sw, sw_legacy_v1=sw_legacy,
                         paper_unbiased_mean=float("nan"),
-                        paper_unbiased_ci=float("nan"), n_reps=1, K=40, D_max=16)
+                        paper_unbiased_ci=float("nan"), n_reps=1, K=40, D_max=16,
+                        n_sw=n_sw)
     else:
         raise ValueError(f"unknown source {source!r}")
     return wf, target, sw_stats
 
 
 # ============================================================================
-# Stage 2 -- rare-event (k-sigma) tail labeling, residual separation
+# Stage 2 -- classical arm: gradient flow under the SAME learned potential
+# ============================================================================
+def classical_gradient_flow(n, seed=0, kref=160, sub=4, chunk=5000):
+    """Integrate xdot = grad V of the MPS-V oracle the tensor network consumes.
+
+    This is the classical arm of the pipeline comparison. Using the same learned
+    potential is the point: oracle error is then common to both arms, so panel
+    (a) contrasts the transports and sampling methods rather than two different
+    velocity fields.
+
+    Chunked to bound memory: the autograd graph is over (chunk, d) at each of
+    kref*sub substeps.
+    """
+    import torch  # local: the plotting path must import without torch
+
+    from tnwf.mps_v.model import MPSScalarPotentialTimeSite
+    from tnwf.pipelines.run_evolution import checkpoint_source_sigma
+
+    cands = [f for f in sorted(glob.glob(os.path.join(CKPT_DIR, "*.pt")))
+             if "_d8_" in os.path.basename(f)]
+    if not cands:
+        raise FileNotFoundError(
+            f"No d=8 MPS-V checkpoint under {CKPT_DIR}.\n"
+            "The classical gradient-flow arm needs it. Fetch the Zenodo data "
+            "release and place or symlink it at data/mps_v_checkpoints/.")
+    ck = torch.load(cands[0], map_location="cpu", weights_only=True)
+    a = ck["args"]
+    model = MPSScalarPotentialTimeSite(d=D, N=int(a["N_grid"]), D=int(a["D_mps"]),
+                                       L=float(a["L"]), N_t=int(a["N_t"]))
+    model.load_state_dict(ck["model"])
+    model.eval()
+    s0 = checkpoint_source_sigma(a, L)
+    dt = 1.0 / (kref * sub)
+    print(f"[classical] {os.path.basename(cands[0])}  sigma_0={s0:.4f}  "
+          f"{kref * sub} substeps on {n} samples", flush=True)
+
+    out = []
+    for c0 in range(0, n, chunk):
+        nb = min(chunk, n - c0)
+        g = torch.Generator().manual_seed(1000 + seed + c0)
+        x = s0 * torch.randn(nb, D, generator=g)
+        for k in range(kref):
+            for s in range(sub):
+                xin = x.detach().requires_grad_(True)
+                t = torch.full((nb, 1), (k * sub + s) * dt)
+                gx = torch.autograd.grad(model(xin, t).sum(), xin)[0]
+                with torch.no_grad():
+                    x = (x + dt * gx).clamp(-L / 2, L / 2)
+        out.append(x.detach().numpy().astype(np.float64))
+        print(f"           {c0 + nb}/{n}", flush=True)
+    return np.vstack(out)
+
+
+# ============================================================================
+# Stage 3 -- rare-event (k-sigma) tail labeling, residual separation
 # ============================================================================
 def label_tails(samples, centers, tail_k):
     """Nearest-mode radial k-sigma rule with residual-mass separation.
@@ -221,85 +276,36 @@ def label_tails(samples, centers, tail_k):
 
 
 # ============================================================================
-# Stage 4/5 -- MLQAE vs classical MC sweep
+# Stage 4 -- cost of a rare sample, swept over the threshold
 # ============================================================================
-def _slope(xs, ys) -> float:
-    mask = (xs > 0) & (ys > 0)
-    s, _ = np.polyfit(np.log(xs[mask]), np.log(ys[mask]), deg=1)
-    return float(s)
+def sweep_thresholds(wf, cl, centers):
+    """Tail masses and per-rare-sample costs for both arms, over THRESHOLDS.
 
-
-def _empirical_crossover(q, em, ec):
-    """Interpolate (in log-log) the Q where measured MLQAE error drops below MC.
-
-    Returns (Qx, ex) or (None, None) if MLQAE already wins at the smallest budget.
+    Rejection costs 1/p preparations per accepted rare sample -- an identity,
+    not a model. Amplification costs `amp_cost(p)`; see `tnwf.amp` for why the
+    round count minimizes expected preparations rather than maximizing success
+    probability.
     """
-    d = np.log(em) - np.log(ec)     # >0 : MLQAE worse than MC
-    for i in range(len(q) - 1):
-        if d[i] > 0.0 >= d[i + 1]:
-            t = d[i] / (d[i] - d[i + 1])
-            lq = np.log(q[i]) + t * (np.log(q[i + 1]) - np.log(q[i]))
-            le = np.log(em[i]) + t * (np.log(em[i + 1]) - np.log(em[i]))
-            return float(np.exp(lq)), float(np.exp(le))
-    return None, None
+    rows = []
+    for k in THRESHOLDS:
+        a_cl = float(label_tails(cl, centers, k)[2].mean())
+        a_wf = float(label_tails(wf, centers, k)[2].mean())
+        if a_cl <= 0.0 or a_wf <= 0.0:
+            continue                                  # no samples that far out
+        rows.append((k, float(chi2.sf(k ** 2, df=D)), a_cl, a_wf,
+                     1.0 / a_cl, float(amp_cost(a_wf))))
+    r = np.array(rows)
+    return dict(k=r[:, 0], a_true=r[:, 1], a_cl=r[:, 2], a_wf=r[:, 3],
+                preps_cl=r[:, 4], preps_q=r[:, 5])
 
 
-def mlqae_vs_mc_sweep(a_true, master_rng) -> dict:
-    qs, mlqae_err, mc_err = [], [], []
-    ml_lo, ml_hi, mc_lo, mc_hi = [], [], [], []   # 25/75 percentiles per budget
-    for (M, n_shots) in BUDGETS:
-        q_trials, e_trials = [], []
-        for _ in range(N_TRIALS):
-            rng = np.random.default_rng(master_rng.integers(2 ** 31))
-            res = mlqae_estimate(a_true=a_true, M=M,
-                                 n_shots_per_k=n_shots, rng=rng)
-            q_trials.append(res.total_grover_queries)
-            e_trials.append(abs(res.a_hat - a_true))
-        q_med = float(np.median(q_trials))
-        qs.append(q_med)
-        mlqae_err.append(float(np.median(e_trials)))
-        elo, ehi = np.percentile(e_trials, [25, 75])
-        ml_lo.append(float(elo)); ml_hi.append(float(ehi))
-        mc_trials = []
-        for _ in range(N_TRIALS):
-            rng = np.random.default_rng(master_rng.integers(2 ** 31))
-            ahat, _n = classical_mc_estimate(a_true, n_samples=max(int(q_med), 1),
-                                             rng=rng)
-            mc_trials.append(abs(ahat - a_true))
-        mc_err.append(float(np.median(mc_trials)))
-        clo, chih = np.percentile(mc_trials, [25, 75])
-        mc_lo.append(float(clo)); mc_hi.append(float(chih))
-    order = np.argsort(qs)
-    _o = lambda x: np.array(x)[order]  # noqa: E731
-    qs = np.array(qs)[order]
-    mlqae_err, mc_err = _o(mlqae_err), _o(mc_err)
-    ml_lo, ml_hi, mc_lo, mc_hi = _o(ml_lo), _o(ml_hi), _o(mc_lo), _o(mc_hi)
-    # slopes on the asymptotic tail (large Q) only
-    asy = qs >= ASYMPTOTIC_Q
-    Qx, ex = _empirical_crossover(qs, mlqae_err, mc_err)
-    return dict(a_true=a_true, queries=qs, mlqae_err=mlqae_err, mc_err=mc_err,
-                mlqae_lo=ml_lo, mlqae_hi=ml_hi, mc_lo=mc_lo, mc_hi=mc_hi,
-                mlqae_slope=_slope(qs[asy], mlqae_err[asy]),
-                mc_slope=_slope(qs[asy], mc_err[asy]),
-                crossover_Q=Qx, crossover_err=ex,
-                final_speedup=float(mc_err[-1] / max(mlqae_err[-1], 1e-12)))
+def _fit_prefactor(p, cost, exponent):
+    """Least squares in log space with the exponent held at its structural value."""
+    return float(np.exp(np.mean(np.log(cost) - exponent * np.log(p))))
 
 
 # ============================================================================
-# Rare-event SAMPLING advantage: amplitude amplification vs rejection sampling
-# ============================================================================
-def _amp_params(a):
-    """Optimal Grover power k*, its success prob P, for good-subspace amplitude a."""
-    theta = float(np.arcsin(np.sqrt(np.clip(a, 0.0, 1.0))))
-    if theta <= 0.0:
-        return 0, 0.0
-    k = max(int(round(np.pi / (4.0 * theta) - 0.5)), 0)
-    P = float(np.sin((2 * k + 1) * theta) ** 2)
-    return k, min(max(P, 1e-9), 1.0)
-
-
-# ============================================================================
-# Master 4-panel figure
+# Stage 5 -- the figure
 # ============================================================================
 def _axtag(ax, txt, inside=False):
     if inside:
@@ -310,167 +316,127 @@ def _axtag(ax, txt, inside=False):
                 fontweight="bold", va="bottom", ha="right")
 
 
-def _draw_estimation(ax, s):
-    c_q, c_c = "#3b0f70", "#8c8c8c"
-    q, em, ec = s["queries"], s["mlqae_err"], s["mc_err"]
-    ax.fill_between(q, s["mlqae_lo"], s["mlqae_hi"], color=c_q, alpha=0.15,
-                    linewidth=0, zorder=1)
-    ax.fill_between(q, s["mc_lo"], s["mc_hi"], color=c_c, alpha=0.15,
-                    linewidth=0, zorder=1)
-    ax.loglog(q, em, "o-", color=c_q, lw=2.8, ms=9,
-              label=f"MLQAE  ({s['mlqae_slope']:+.2f})")
-    ax.loglog(q, ec, "s--", color=c_c, lw=2.4, ms=8, mfc="white",
-              label=f"Monte Carlo  ({s['mc_slope']:+.2f})")
-    qg = np.array([q[0], q[-1]])
-    ax.loglog(qg, em[0] * (qg / q[0]) ** -1.0, "-", color=c_q, lw=1, alpha=0.3)
-    ax.loglog(qg, ec[0] * (qg / q[0]) ** -0.5, "--", color=c_c, lw=1, alpha=0.4)
-    ax.set_xlabel(r"oracle queries  $Q$", fontsize=21)
-    ax.set_ylabel(r"error  $|\hat a - a|$", fontsize=21)
-    ax.tick_params(labelsize=17)
-    ax.grid(True, which="both", alpha=0.3)
-    # tight limits around the data + IQR bands (guide lines may clip)
-    ax.set_xlim(q.min() / 1.15, q.max() * 1.15)
-    ylo = min(float(s["mlqae_lo"].min()), float(s["mc_lo"].min()))
-    yhi = max(float(s["mlqae_hi"].max()), float(s["mc_hi"].max()))
-    ax.set_ylim(ylo / 1.4, yhi * 1.4)
-    ax.legend(fontsize=18, loc="lower left")
-
-
-def _draw_amp_cost(ax, seed):
-    rng = np.random.default_rng(seed); N_RARE, TRIALS = 200, 61
-    sigmas = np.array([3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0])
-    ps = chi2.sf(sigmas ** 2, df=D)
-    cost_cl, cost_qu = [], []
-    cl_lo, cl_hi, qu_lo, qu_hi = [], [], [], []   # 25/75 percentiles per rarity
-    for a in ps:
-        k, P = _amp_params(a); cost = 2 * k + 1
-        cl = (rng.negative_binomial(N_RARE, min(max(float(a), 1e-12), 1.0),
-                                    size=TRIALS) + N_RARE) / N_RARE
-        qu = ((rng.negative_binomial(N_RARE, P, size=TRIALS) + N_RARE) * cost) / N_RARE
-        cost_cl.append(np.median(cl)); cost_qu.append(np.median(qu))
-        c1, c2 = np.percentile(cl, [25, 75]); q1, q2 = np.percentile(qu, [25, 75])
-        cl_lo.append(c1); cl_hi.append(c2); qu_lo.append(q1); qu_hi.append(q2)
-    cost_cl = np.array(cost_cl); cost_qu = np.array(cost_qu)
-    cl_lo, cl_hi = np.array(cl_lo), np.array(cl_hi)
-    qu_lo, qu_hi = np.array(qu_lo), np.array(qu_hi)
-    c_q, c_c = "#3b0f70", "#8c8c8c"
-    ax.fill_between(ps, cl_lo, cl_hi, color=c_c, alpha=0.15, linewidth=0, zorder=1)
-    ax.fill_between(ps, qu_lo, qu_hi, color=c_q, alpha=0.15, linewidth=0, zorder=1)
-    ax.loglog(ps, cost_cl, "s--", color=c_c, lw=2.4, ms=9, mfc="white",
-              label="rejection sampling")
-    ax.loglog(ps, cost_qu, "o-", color=c_q, lw=2.8, ms=9,
-              label="amplitude amplification")
-    ax.loglog(ps, cost_cl[0] * (ps / ps[0]) ** -1.0, "-", color=c_c, lw=1, alpha=0.35)
-    ax.loglog(ps, cost_qu[0] * (ps / ps[0]) ** -0.5, "-", color=c_q, lw=1, alpha=0.35)
-    ax.set_xlabel(r"rare-event probability  $p$", fontsize=21)
-    ax.set_ylabel("oracle queries / rare sample", fontsize=21)
-    ax.tick_params(labelsize=17)
-    ax.grid(True, which="both", alpha=0.3)
-    # tight limits around the data + IQR bands (standard axis: small p on the left)
-    ymin = min(float(qu_lo.min()), float(cl_lo.min()))
-    ymax = max(float(qu_hi.max()), float(cl_hi.max()))
-    ax.set_ylim(ymin / 1.4, ymax * 1.4)
-    ax.set_xlim(float(ps.min()) / 1.6, float(ps.max()) * 1.6)
-    ax.legend(fontsize=17, loc="upper right")
-
-
-def _draw_sampling_tsne(ax_l, ax_r, wf, seed, tail_k, budget=1000):
-    """Embed the *prepared state's* Born samples and show the rare-sample yield.
-
-    Both point clouds are drawn from `wf`, the Born samples of the K=160 MPS-V
-    state loaded by `load_wf_samples`. Previously both were drawn from
-    `sample_gaussian_mixture`, so the panels compared the analytic target with
-    itself and no wavefunction data entered the figure at all — even though the
-    real cores were loaded and sampled a few lines earlier.
-
-    The yields are set by the analytic tail probability a*, matching panels
-    (a,b), so all four panels describe the same primitive at the same
-    rare-event rate. The prepared state's own tail fraction is a separate
-    measurement — it over-populates a* by about 2.2x — and is reported as a
-    number in the text rather than folded into this illustration.
-    """
+def make_master_figure(sw_data, wf, centers, out_dir, seed=0, tail_k=DEFAULT_TAIL_K):
+    """Three square panels: sampling cost, then the harvest split by method."""
     from sklearn.manifold import TSNE
+
+    k = sw_data["k"]
+    a_cl, a_wf = sw_data["a_cl"], sw_data["a_wf"]
+    preps_cl, preps_q = sw_data["preps_cl"], sw_data["preps_q"]
+
+    fig = plt.figure(figsize=(19.5, 7.4), dpi=160, constrained_layout=True)
+    gs = fig.add_gridspec(1, 3)
+    ax_cost = fig.add_subplot(gs[0, 0])
+    ax_rej = fig.add_subplot(gs[0, 1])
+    ax_amp = fig.add_subplot(gs[0, 2])
+
+    # ---- (a) sampling cost -------------------------------------------------
+    p_at = lambda kk: float(np.interp(kk, k, a_wf))            # noqa: E731
+    ax_cost.axvline(p_at(tail_k), color="0.4", lw=1.5, ls=(0, (1, 2.2)), zorder=2)
+    ax_cost.text(p_at(tail_k) * 1.15, 0.04, rf"${tail_k:g}\sigma$",
+                 transform=ax_cost.get_xaxis_transform(),
+                 ha="left", va="bottom", fontsize=17, color="0.3")
+
+    # Rejection's 1/p is an identity holding at every p, so it is fitted and drawn
+    # across all points. Amplification's 1/sqrt(p) is asymptotic and fails past
+    # p ~ 0.2, where the optimal round count reaches zero and the cost flattens
+    # onto the one-preparation floor, so it is fitted and drawn on the tail only.
+    mq = a_wf <= TAIL_FIT_CUT
+    c_cl = _fit_prefactor(a_cl, preps_cl, -1.0)
+    c_q = _fit_prefactor(a_wf[mq], preps_q[mq], -0.5)
+    xc, xq = np.sort(a_cl), np.sort(a_wf[mq])
+    print(f"[fit] rejection {c_cl:.4f}/p over all points (exact 1 by construction); "
+          f"amplification {c_q:.3f}/sqrt(p) on p<={TAIL_FIT_CUT} "
+          f"(asymptote {AMP_PREFACTOR:.3f})", flush=True)
+
+    ax_cost.loglog(xc, c_cl / xc, "-", color=C_C, lw=2.4, zorder=2,
+                   label=r"$\propto 1/p$   (slope $-1$)")
+    ax_cost.loglog(xq, c_q / np.sqrt(xq), "-", color=C_Q, lw=2.4, zorder=2,
+                   label=r"$\propto 1/\sqrt{p}$   (slope $-1/2$)")
+    ax_cost.loglog(a_cl, preps_cl, ls="none", marker="s", color=C_C, ms=9,
+                   mfc="white", mew=2.0, zorder=3, label="rejection sampling")
+    ax_cost.loglog(a_wf, preps_q, ls="none", marker="o", color=C_Q, ms=9,
+                   zorder=4, label="amplitude amplification")
+    ax_cost.set_xlabel(r"rare-event probability  $p$", fontsize=21)
+    ax_cost.set_ylabel("state preparations / rare sample", fontsize=21)
+    ax_cost.tick_params(labelsize=16)
+    ax_cost.grid(True, which="both", color="0.85", lw=0.7, alpha=0.8)
+    ax_cost.set_axisbelow(True)
+    ax_cost.legend(fontsize=16, loc="upper right", framealpha=0.95, borderpad=0.5)
+    xs = np.concatenate([a_cl, a_wf])
+    ys = np.concatenate([preps_cl, preps_q])
+    ax_cost.set_xlim(xs.min() / 1.12, xs.max() * 1.12)
+    ax_cost.set_ylim(ys.min() / 1.12, ys.max() * 1.12)
+    ax_cost.set_box_aspect(1)
+    _axtag(ax_cost, "(a)")
+
+    # ---- (b,c) harvest at a fixed budget -----------------------------------
+    near, _, tail, resid = label_tails(wf, centers, tail_k)
     rng = np.random.default_rng(seed)
-    C = gm_mode_centers()
-
-    wf = np.asarray(wf, dtype=float)
-    # Use the module's own labeling rather than an inline nearest-mode test.
-    # label_tails excludes *residual* mass -- samples nearer the origin than any
-    # mode, i.e. source density the flow never transported. Those are not rare
-    # events, they are failures to move, and the a_wf this figure reports
-    # already excludes them. Labeling them here as well would have drawn ~2.5
-    # percentage points of untransported mass as successful tail samples, which
-    # shows up as a clump of mixed-mode points sitting in the middle of the
-    # embedding belonging to no cluster.
-    wf_near, _, tmask, residual = label_tails(wf, C, tail_k)
-    a = float(chi2.sf(tail_k ** 2, D))          # analytic a*, as in panels (a,b)
-
-    pool = wf[tmask][:600]
-    pool_near = wf_near[tmask][:600]
-    # Bulk = transported, non-tail. Residual is excluded from both clouds so
-    # the panels show only mass the flow actually placed on the mixture.
-    bulk_idx = np.flatnonzero(~tmask & ~residual)
+    bulk_idx = np.flatnonzero(~tail & ~resid)
     if len(bulk_idx) > 1600:
         bulk_idx = rng.choice(bulk_idx, 1600, replace=False)
-    core = wf[bulk_idx]
-    core_near = wf_near[bulk_idx]
-
-    k, P = _amp_params(a); cost = 2 * k + 1
-    n_rej = min(int(round(budget * a)), len(pool))
-    n_amp = min(int(round(budget / cost * P)), len(pool))
-    combo = np.vstack([core, pool])
-    print(f"[master] embedding {combo.shape[0]} points...", flush=True)
+    pool_idx = np.flatnonzero(tail)[:600]
     emb = TSNE(n_components=2, perplexity=30, init="pca",
-               random_state=seed).fit_transform(combo)
-    e_core, e_pool = emb[:len(core)], emb[len(core):]
+               random_state=seed).fit_transform(np.vstack([wf[bulk_idx],
+                                                           wf[pool_idx]]))
+    e_core, e_pool = emb[:len(bulk_idx)], emb[len(bulk_idx):]
     cmap = plt.get_cmap("tab20")
-    idx_rej = rng.choice(len(pool), n_rej, replace=False)
-    idx_amp = rng.choice(len(pool), n_amp, replace=False)
 
-    def _panel(ax, idx):
-        ax.scatter(e_core[:, 0], e_core[:, 1], s=30, c=cmap(core_near % 20),
+    i_k = int(np.argmin(np.abs(k - tail_k)))
+    n_rej = min(int(round(BUDGET * a_wf[i_k])), len(pool_idx))
+    n_amp = min(int(round(BUDGET / preps_q[i_k])), len(pool_idx))
+    print(f"[harvest] Q={BUDGET} preparations at {tail_k:g} sigma "
+          f"(p={a_wf[i_k]:.5f}, amp cost {preps_q[i_k]:.2f}):  "
+          f"rejection={n_rej}  amplification={n_amp}  "
+          f"({n_amp / max(n_rej, 1):.2f}x)", flush=True)
+
+    def _panel(ax, idx, title, ring):
+        ax.scatter(e_core[:, 0], e_core[:, 1], s=30, c=cmap(near[bulk_idx] % 20),
                    alpha=0.16, linewidths=0)
-        ax.scatter(e_pool[idx, 0], e_pool[idx, 1], s=52, c=cmap(pool_near[idx] % 20),
-                   alpha=1.0, edgecolors="black", linewidths=1.1)
-        ax.set_xticks([]); ax.set_yticks([])
-        ax.margins(0.02)
+        # Ring carries the method, matching that arm's color in (a); white fill so
+        # the marker reads even where a bulk cluster shares the ring's hue.
+        ax.scatter(e_pool[idx, 0], e_pool[idx, 1], s=58, facecolors="white",
+                   edgecolors=ring, linewidths=1.8, zorder=4)
+        ax.set_xlabel(title, fontsize=19, labelpad=12)
+        ax.set_xticks([])
+        ax.set_yticks([])
 
-    _panel(ax_l, idx_rej)
-    _panel(ax_r, idx_amp)
-    print(f"[fig8cd] prepared-state Born samples: {len(core)} bulk + "
-          f"{int(tmask.sum())} >{tail_k:g}sigma tail "
-          f"({int(residual.sum())} residual excluded); at Q={budget} yields "
-          f"rejection={n_rej}, amplification={n_amp} "
-          f"({n_amp / max(n_rej, 1):.1f}x)", flush=True)
-    return n_rej, n_amp
+    _panel(ax_rej, rng.choice(len(pool_idx), n_rej, replace=False),
+           "rejection sampling", C_C)
+    _panel(ax_amp, rng.choice(len(pool_idx), n_amp, replace=False),
+           "amplitude amplification", C_Q)
+    _axtag(ax_rej, "(b)")
+    _axtag(ax_amp, "(c)")
+    # Square window with equal data aspect: a t-SNE map is isotropic, so filling a
+    # wide box would distort the geometry. Shared frame, so density compares.
+    cx = 0.5 * (emb[:, 0].min() + emb[:, 0].max())
+    cy = 0.5 * (emb[:, 1].min() + emb[:, 1].max())
+    half = 0.5 * max(np.ptp(emb[:, 0]), np.ptp(emb[:, 1])) + 2.0
+    for ax in (ax_rej, ax_amp):
+        ax.set_xlim(cx - half, cx + half)
+        ax.set_ylim(cy - half, cy + half)
+        ax.set_aspect("equal")
+        ax.set_box_aspect(1)
 
-
-def make_master_figure(sweeps, wf, out_dir, seed=0, tail_k=4.0):
-    fig = plt.figure(figsize=(14.0, 13.4), dpi=160, constrained_layout=True)
-    gs = fig.add_gridspec(2, 2, height_ratios=[0.95, 1.12])
-    ax_est = fig.add_subplot(gs[0, 0])
-    ax_amp = fig.add_subplot(gs[0, 1])
-    ax_rej = fig.add_subplot(gs[1, 0])
-    ax_aa = fig.add_subplot(gs[1, 1])
-
-    _draw_estimation(ax_est, sweeps["analytic a*"]); _axtag(ax_est, "(a)")
-    _draw_amp_cost(ax_amp, seed); _axtag(ax_amp, "(b)")
-    _draw_sampling_tsne(ax_rej, ax_aa, wf, seed, tail_k); _axtag(ax_rej, "(c)", inside=True)
-    _axtag(ax_aa, "(d)", inside=True)
-
-    legend = [
+    fig.legend(handles=[
         Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="none", ms=12,
                label="modes (bulk)"),
-        Line2D([0], [0], marker="o", ls="", mfc="0.6", mec="black", ms=9,
-               label=f"rare sample (>{tail_k:g}σ)"),
-    ]
-    fig.legend(handles=legend, loc="lower center", bbox_to_anchor=(0.5, -0.09),
-               ncol=2, fontsize=19, framealpha=0.9)
+        Line2D([0], [0], marker="o", ls="", mfc="white", mec=C_C, mew=1.8,
+               ms=10, label="rare sample (rejection)"),
+        Line2D([0], [0], marker="o", ls="", mfc="white", mec=C_Q, mew=1.8,
+               ms=10, label="rare sample (amplification)")],
+        loc="lower center", bbox_to_anchor=(0.5, -0.10), ncol=3, fontsize=17,
+        framealpha=0.9)
+
+    paths = []
     for ext in ("png", "pdf"):
         p = os.path.join(out_dir, f"fig_rare_event_advantage.{ext}")
         fig.savefig(p, dpi=160, bbox_inches="tight")
-        print(f"[master] saved {p}", flush=True)
+        paths.append(p)
+        print(f"[save] {p}")
     plt.close(fig)
+    return dict(c_cl=c_cl, c_q=c_q, n_rej=n_rej, n_amp=n_amp)
 
 
 # ============================================================================
@@ -479,81 +445,72 @@ def make_master_figure(sweeps, wf, out_dir, seed=0, tail_k=4.0):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", choices=["paper", "npz"], default="paper",
-                    help="WF state source: paper Table-2 K=160 (default) or reduced K=40 npz")
+                    help="WF state source: paper Table-2 K=160 (default) or reduced npz")
     ap.add_argument("--tail-k", type=float, default=DEFAULT_TAIL_K)
+    ap.add_argument("--n-samples", type=int, default=N_WF,
+                    help="pooled Born samples per arm (default 40000)")
     ap.add_argument("--seed", type=int, default=SEED)
     args = ap.parse_args()
 
     os.makedirs(OUT_DIR, exist_ok=True)
     t0 = time.perf_counter()
 
-    wf, target, sw = load_wf_samples(args.source, args.seed)
+    wf, target, sw = load_wf_samples(args.source, args.seed, args.n_samples)
     centers = gm_mode_centers()
+    cl = classical_gradient_flow(args.n_samples, seed=args.seed)
 
     tgt_lab = label_tails(target, centers, args.tail_k)
     wf_lab = label_tails(wf, centers, args.tail_k)
-    tgt_tail, tgt_res = tgt_lab[2], tgt_lab[3]
-    wf_tail, wf_res = wf_lab[2], wf_lab[3]
-
     a_star = float(chi2.sf(args.tail_k ** 2, df=D))
-    a_wf = float(wf_tail.mean())
-    a_tgt = float(tgt_tail.mean())
-    print("\n=== rare-event amplitudes (tail_k=%.2f sigma) ===" % args.tail_k)
+    a_wf, a_tgt = float(wf_lab[2].mean()), float(tgt_lab[2].mean())
+    a_cl = float(label_tails(cl, centers, args.tail_k)[2].mean())
+
+    print(f"\n=== rare-event amplitudes (tail_k={args.tail_k:.2f} sigma) ===")
     print(f"  a*    (analytic P(chi_{D}>{args.tail_k:g}))         = {_pct(a_star)}")
-    print(f"  a_tgt (target GMM, genuine tail)             = {_pct(a_tgt)}  (n={target.shape[0]})")
-    print(f"  a_wf  (V-MPS 2TDVP, genuine tail)            = {_pct(a_wf)}  (n={wf.shape[0]})")
-    print(f"  residual (untransported): target={_pct(tgt_res.mean())}  WF={_pct(wf_res.mean())}")
-    print(f"  SW^wf_T: {sw['sw']:.4f}  (v1 convention: {sw['sw_legacy_v1']:.4f})"
-          + (f"  (paper Table-2: {sw['paper_unbiased_mean']:.4f} ± "
-             f"{sw['paper_unbiased_ci']:.4f}, n={sw['n_reps']})"
-             if sw['n_reps'] > 1 else ""))
+    print(f"  a_tgt (target GMM, genuine tail)             = {_pct(a_tgt)}")
+    print(f"  a_wf  (V-MPS 2TDVP, genuine tail)            = {_pct(a_wf)}")
+    print(f"  a_cl  (gradient flow, same potential)        = {_pct(a_cl)}")
+    print(f"  residual (untransported): target={_pct(tgt_lab[3].mean())}  "
+          f"WF={_pct(wf_lab[3].mean())}")
+    print(f"  SW^wf_T: {sw['sw']:.4f} on n={sw['n_sw']}  "
+          f"(v1 convention: {sw['sw_legacy_v1']:.4f})")
     print(f"  tail over-population: a_wf/a* = {a_wf / a_star:.2f}x "
           f"(target/a* = {a_tgt / a_star:.2f}x)")
 
-    K = centers.shape[0]
-    print(f"  per-mode rare counts (target): {np.bincount(tgt_lab[0][tgt_tail], minlength=K).tolist()}")
-    print(f"  per-mode rare counts (WF):     {np.bincount(wf_lab[0][wf_tail], minlength=K).tolist()}")
+    print("\n=== cost per accepted rare sample ===", flush=True)
+    s = sweep_thresholds(wf, cl, centers)
+    fitinfo = make_master_figure(s, wf, centers, OUT_DIR, args.seed, args.tail_k)
 
-    master_rng = np.random.default_rng(args.seed)
-    print("\n=== MLQAE vs classical MC sweep ===", flush=True)
-    sweeps = {}
-    for label, a in [("analytic a*", a_star), ("WF a_wf", a_wf)]:
-        s = mlqae_vs_mc_sweep(a, master_rng)
-        sweeps[label] = s
-        print(f"  [{label}] a={a:.4f}  MLQAE slope={s['mlqae_slope']:+.3f}  "
-              f"MC slope={s['mc_slope']:+.3f}  final speedup={s['final_speedup']:.1f}x",
-              flush=True)
+    i_k = int(np.argmin(np.abs(s["k"] - args.tail_k)))
+    lift = s["preps_cl"][i_k] / s["preps_q"][i_k]
+    print(f"\n  lift at {args.tail_k:g} sigma: {lift:.2f}x  "
+          f"(rejection {s['preps_cl'][i_k]:.1f} vs amplification "
+          f"{s['preps_q'][i_k]:.2f} preparations per rare sample)")
+    for kk in (5.0, 6.0):
+        j = int(np.argmin(np.abs(s["k"] - kk)))
+        if abs(s["k"][j] - kk) < 1e-9:
+            print(f"  lift at {kk:g} sigma: "
+                  f"{s['preps_cl'][j] / s['preps_q'][j]:.2f}x")
 
-    make_master_figure(sweeps, wf, OUT_DIR, args.seed, args.tail_k)
-
-    npz_path = os.path.join(OUT_DIR, "rare_event_qae.npz")
+    npz_path = os.path.join(OUT_DIR, "rare_event_advantage.npz")
     np.savez(
         npz_path,
         tail_k=args.tail_k, sigma=SIGMA, scale=SCALE, d=D, L=L, source=args.source,
-        a_star=a_star, a_tgt=a_tgt, a_wf=a_wf,
-        sw=sw["sw"], sw_legacy_v1=sw["sw_legacy_v1"],
+        n_samples=args.n_samples, budget=BUDGET,
+        a_star=a_star, a_tgt=a_tgt, a_wf=a_wf, a_cl=a_cl,
+        sw=sw["sw"], sw_legacy_v1=sw["sw_legacy_v1"], n_sw=sw["n_sw"],
         paper_unbiased_mean=sw["paper_unbiased_mean"],
         target=target.astype(np.float32), wf=wf.astype(np.float32),
-        target_tail=tgt_tail, wf_tail=wf_tail,
-        target_residual=tgt_res, wf_residual=wf_res,
+        cl=cl.astype(np.float32),
+        target_tail=tgt_lab[2], wf_tail=wf_lab[2],
+        target_residual=tgt_lab[3], wf_residual=wf_lab[3],
         target_nearest=tgt_lab[0], wf_nearest=wf_lab[0],
-        budgets=np.array(BUDGETS), N_TRIALS=N_TRIALS,
-        astar_crossover_Q=sweeps["analytic a*"]["crossover_Q"] or np.nan,
-        awf_crossover_Q=sweeps["WF a_wf"]["crossover_Q"] or np.nan,
-        **{f"{'astar' if 'a*' in k else 'awf'}_{fld}": sweeps[k][fld]
-           for k in sweeps for fld in ("queries", "mlqae_err", "mc_err",
-                                       "mlqae_slope", "mc_slope")},
+        amp_prefactor_theory=AMP_PREFACTOR,
+        fit_prefactor_rejection=fitinfo["c_cl"], fit_prefactor_amp=fitinfo["c_q"],
+        harvest_rejection=fitinfo["n_rej"], harvest_amplification=fitinfo["n_amp"],
+        **{f"sweep_{name}": s[name] for name in s},
     )
     print(f"\n[save] {npz_path}")
-
-    print("\n" + "=" * 72)
-    print(f"{'amplitude':>14s}  {'a':>7s}  {'MLQAE slope':>12s}  {'MC slope':>9s}  "
-          f"{'final speedup':>14s}")
-    print("-" * 72)
-    for k, s in sweeps.items():
-        print(f"{k:>14s}  {s['a_true']:>7.4f}  {s['mlqae_slope']:>+12.3f}  "
-              f"{s['mc_slope']:>+9.3f}  {s['final_speedup']:>13.1f}x")
-    print("=" * 72)
     print(f"[done] total {time.perf_counter() - t0:.1f}s")
 
 

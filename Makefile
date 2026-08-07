@@ -29,7 +29,7 @@ help:
 	@echo "  make table1        render paper Table 1 (best-cell SW) — needs gmm_*_hp sweeps"
 	@echo "  make table2        render paper Table 2 (MPS-V scaling) — needs timing_scaling + checkpoints"
 	@echo "  make fig-scaling-bounds  render paper Fig 4 (error scaling) — needs scaling_theory CSVs"
-	@echo "  make fig-rare-event  render the rare-event advantage figure (paper Fig 8)"
+	@echo "  make fig-rare-event  render the rare-event advantage figure (paper Fig 8) — needs mps_v_checkpoints"
 	@echo ""
 	@echo "  make notebook      launch the examples/tnwf_demo.ipynb demo notebook"
 	@echo ""
@@ -122,10 +122,18 @@ table2:
 fig-scaling-bounds:
 	uv run python scripts/make_fig_scaling_bounds.py
 
-# Rare-event advantage (paper Fig 8). Self-contained: the Table-2 K=160 MPS cores
-# ship in examples/rare_event/, so this needs no HP-sweep data. The script now
-# defaults to the paper's --tail-k 4.0, so no flag is needed here.
+# Rare-event advantage (paper Fig 8). The quantum arm reads the Table-2 K=160
+# MPS cores that ship in examples/rare_event/, but the classical arm integrates
+# grad V of the SAME learned potential, so this target also needs the MPS-V
+# checkpoint from the Zenodo data release. Using one potential for both arms is
+# what makes the comparison fair: oracle error is then common to the two.
 fig-rare-event:
+	@test -d data/mps_v_checkpoints || { \
+	  echo "ERROR: data/mps_v_checkpoints/ is missing."; \
+	  echo "  The classical gradient-flow arm of Fig 8 needs the d=8 MPS-V"; \
+	  echo "  checkpoint. Fetch the Zenodo data release (see data/README-data.md)"; \
+	  echo "  and place or symlink it at data/mps_v_checkpoints/."; \
+	  exit 1; }
 	uv run python scripts/make_fig_rare_event.py --source paper
 
 # ── demo notebook ─────────────────────────────────────────────────────────

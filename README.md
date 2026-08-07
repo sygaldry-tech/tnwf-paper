@@ -110,7 +110,7 @@ Float numbers below follow the manuscript.
 | Fig 6 | `fig4_cost_scaling.pdf` | `make_fig4.py` | ✅ needs sweeps |
 | Fig 7 | `fig_ksweep_trained_std0.5_noHyb_wt.pdf` | *not released* | cloud (Modal) timing driver |
 | Table 2 | `table_scaling.tex` | `make_table2_scaling.py` | ✅ needs `timing_scaling` + MPS-V checkpoints |
-| Fig 8 | `fig_rare_event_advantage.pdf` | `make_fig_rare_event.py` | ✅ ships its own data |
+| Fig 8 | `fig_rare_event_advantage.pdf` | `make_fig_rare_event.py` | ✅ needs MPS-V checkpoints |
 
 ### Supplement
 
@@ -185,7 +185,7 @@ With the archive unpacked, every reproducible float renders:
 
 ```bash
 make fig2 fig-scaling-bounds fig3 fig4 supp table1 table2
-make fig-rare-event                                    # needs no archive data
+make fig-rare-event                                    # needs MPS-V checkpoints
 uv run python scripts/make_fig_gmm_ode.py              # needs no archive data
 ```
 
@@ -198,14 +198,22 @@ slightly different `V_t` and Fig 2 then differs from the manuscript — verified
 checkpoints are in the data archive at
 `data/{swiss_roll_2d,gmm_2d,gmm_3d}/jam/`; unpacking it is enough.
 
-**Fig 8 is fully self-contained** — it needs no archive data.
-`examples/rare_event/rep*.npz` holds the final MPS cores from the ten Table-2
-replicates (N=32, K=160, D_max=64), converted from the original pickles so this
-repository ships no `pickle` payloads; `fallback_K40_D16.npz` is a reduced
-K=40/D_max=16 state for `--source npz`. The script writes the manuscript's
-filename (`figures/fig_rare_event_advantage.pdf`) directly and defaults to the
-paper's `--tail-k 4.0`, so a bare `python scripts/make_fig_rare_event.py`
-reproduces the figure. Takes ~40 s.
+**Fig 8 needs the MPS-V checkpoint**, unlike earlier releases where it was
+self-contained. Its quantum arm reads `examples/rare_event/rep*.npz` — the final
+MPS cores from the ten Table-2 replicates (N=32, K=160, D_max=64), converted from
+the original pickles so this repository ships no `pickle` payloads. But the
+classical arm integrates `grad V` of the *same* learned potential, which lives in
+`data/mps_v_checkpoints/` in the data archive. Using one potential for both arms
+is what makes the comparison fair: the learning error is then common to the two,
+so the figure contrasts the transports and sampling methods rather than two
+different velocity fields. `make fig-rare-event` fails with a pointer to the
+archive if the checkpoint is absent.
+
+`fallback_K40_D16.npz` is a reduced K=40/D_max=16 state for `--source npz`. The
+script writes the manuscript's filename
+(`figures/fig_rare_event_advantage.pdf`) directly and defaults to the paper's
+`--tail-k 4.0`, so a bare `python scripts/make_fig_rare_event.py` reproduces the
+figure. Takes ~1 min at the default 40,000 samples per arm.
 
 **Fig 5 palette.** The color stops in `make_fig3_tsne_grid.py` are pinned as
 explicit magma triples (LUT indices 38 / 128 / 199) rather than `plt.cm.magma(f)`
@@ -216,7 +224,7 @@ calls. magma is a 256-entry lookup table, so `magma(f)` is piecewise constant in
 
 ```
 tnwf/
-├── src/tnwf/             # package: jam/, mps_v/, mps/, mpo/, dense/, metrics/, data/, pipelines/, qae.py
+├── src/tnwf/             # package: jam/, mps_v/, mps/, mpo/, dense/, metrics/, data/, pipelines/, amp.py
 ├── tests/                # pytest suite mirroring src/tnwf/
 ├── scripts/make_*.py     # one generator per paper float
 ├── scripts/{dataset}/    # per-dataset runners (train_jam, run_all_methods)
