@@ -133,8 +133,9 @@ def convention_of(z, path: Path | str | None = None) -> str:
             return conv
     raise CoordConventionError(
         f"{path}: no {CONV_KEY!r} stamp and no entry in data/COORD_CONVENTIONS.tsv. "
-        "Refusing to assume a convention — run scripts/migrate_archive.py, or add "
-        "the file to the sidecar table if it is intentionally left unmigrated."
+        "Refusing to assume a convention — use the published data archive, whose "
+        "records are all node-centered, or add the file to the sidecar table if "
+        "it is intentionally left unstamped."
     )
 
 

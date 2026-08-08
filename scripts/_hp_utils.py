@@ -41,10 +41,9 @@ def _safe_load(path: Path) -> dict | None:
     """Open a seed*.npz; return None if it's mid-write or corrupted.
 
     Reads `sw_endpoint`, the endpoint sliced-Wasserstein recomputed from
-    node-centered samples with a recorded projection seed (see
-    `scripts/migrate_archive.py`). A pre-migration archive raises rather than
-    silently supplying the half-cell-biased `sw`, which is the failure mode
-    that put two conventions into one paper.
+    node-centered samples with a recorded projection seed. A record predating
+    that convention raises rather than silently supplying the half-cell-biased
+    `sw`, which is the failure mode that put two conventions into one paper.
 
     Two timers are exposed. `time` is `total_time`, which brackets the whole
     Trotter loop and so includes the per-step metric callback; `evolve_time`
@@ -59,8 +58,8 @@ def _safe_load(path: Path) -> dict | None:
         if "sw_endpoint" not in z.files:
             raise CoordConventionError(
                 f"{path} predates the node-centered coordinate convention. "
-                f"Its `sw` carries a half-cell sampling bias. Run "
-                f"`python scripts/migrate_archive.py --src <v1> --dst <v2>`."
+                f"Its `sw` carries a half-cell sampling bias. Use the "
+                f"published data archive, whose records are all node-centered."
             )
         step_times = (np.asarray(z["step_times"], dtype=float)
                       if "step_times" in z.files else None)

@@ -135,8 +135,8 @@ re-derived.
 ## Getting the data archive
 
 Everything above marked "needs …" reads from `data/`, which is **not in this
-repository** — the hyperparameter sweeps alone are ~155 MB. It is archived
-separately with a DOI:
+repository** — it is 41 MB unpacked, almost all of it hyperparameter sweeps. It
+is archived separately with a DOI:
 
 The archive is deposited with **restricted** access: the DOI and its metadata
 are public and citable, but the files are released on request (see
@@ -152,7 +152,7 @@ curl -L -o tnwf-paper-data.tar.gz "https://zenodo.org/records/21845216/files/tnw
 # Verify before unpacking. This digest is for the v2 archive built by
 # scripts/package_data_archive.py; the build is byte-reproducible, so
 # rebuilding from the same inputs reproduces it exactly.
-echo "adeedc702d9fb88c8170f6ad0f08998112b6e072a0251e401fc9e0a7db8e3c33  tnwf-paper-data.tar.gz" | shasum -a 256 -c
+echo "a6507894a3334221c05d3f9a08c83630f16ccc91837ed607770868e1511a19cf  tnwf-paper-data.tar.gz" | shasum -a 256 -c
 
 # Unpack AT THE REPO ROOT — every member is rooted at data/, and several
 # generators hardcode relative paths like data/gmm_2d_hp/ with no CLI override.
@@ -237,9 +237,6 @@ version-controlled — see the archive section above.
 
 Dependencies are pinned in [`uv.lock`](uv.lock), which records the exact
 resolved version of every direct and transitive dependency.
-[`licenses/THIRD_PARTY_LICENSES.md`](licenses/THIRD_PARTY_LICENSES.md) reports
-each one's license, regenerated from the lock by `make licenses`
-(`make licenses-check` exits non-zero if anything non-permissive appears).
 
 As of the current lock, the 36 packages reachable on macOS and Windows are all
 permissively licensed — no copyleft of any kind. The remaining 17 are the

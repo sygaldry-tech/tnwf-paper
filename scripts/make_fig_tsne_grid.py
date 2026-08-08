@@ -70,7 +70,8 @@ def derive_cells(dims=(3, 5, 7)) -> dict:
                     if "sw_endpoint" not in z.files:
                         raise SystemExit(
                             f"{f} predates the node-centered coordinate "
-                            f"convention; run scripts/migrate_archive.py first.")
+                            f"convention. Use the published data archive, "
+                            f"whose records are all node-centered.")
                     sw = float(np.asarray(z["sw_endpoint"]))
                     seed = int(f.stem.replace("seed", ""))
                     if best is None or sw < best[0]:
