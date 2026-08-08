@@ -93,8 +93,6 @@ fig-cost-scaling:
 supp:
 	uv run python scripts/make_fig_supp_pareto.py
 
-# Table 1 (best-cell SW). Needs the gmm_*_hp sweeps unpacked at data/, plus the
-# tracked data/exact_sw_floor.json for the target--target row.
 # Point DATA_SRC at the migrated (v2) archive tree, i.e. the contents of data/.
 DATA_SRC ?= ../tnwf-paper-data-v2
 
@@ -113,6 +111,8 @@ verify-data:            ## check the unpacked data archive against its MANIFEST.
 exact-sw-floor:         ## regenerate data/exact_sw_floor.json (Table 1 reference row)
 	uv run python scripts/compute_exact_sw_floor.py
 
+# Paper Table 1 (best-cell SW). Needs the gmm_*_hp sweeps unpacked at data/,
+# plus the tracked data/exact_sw_floor.json for the target--target row.
 table1:
 	uv run python scripts/make_table1_sw.py
 

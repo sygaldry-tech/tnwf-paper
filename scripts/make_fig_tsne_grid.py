@@ -1,4 +1,4 @@
-"""Figure 3 of the paper: t-SNE overlays for d ∈ {3, 5, 7}.
+"""Figure 5 of the paper: t-SNE overlays for d ∈ {3, 5, 7}.
 
 3 columns × 3 rows grid. Each column is one d. Rows: Exact / JAM / TCI+1TDVP.
 Each panel fits its own t-SNE on (target ∪ method_samples) so cluster

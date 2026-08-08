@@ -1,4 +1,4 @@
-"""Figure 4 of the paper: cross-d scaling of MPS cost relative to Dense.
+"""Figure 6 of the paper: cross-d scaling of MPS cost relative to Dense.
 
 1 row x 3 cols:
 
