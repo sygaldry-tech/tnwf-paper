@@ -143,16 +143,16 @@ are public and citable, but the files are released on request (see
 [`zenodo.json`](zenodo.json)). Everything needed to regenerate every released
 figure and table from it is in this repository.
 
-<!-- TODO(author): replace ZENODO_RECORD once the deposit is published. -->
+DOI: [10.5281/zenodo.21845216](https://doi.org/10.5281/zenodo.21845216)
 
 ```bash
 cd tnwf-paper
-curl -L -o tnwf-paper-data.tar.gz "https://zenodo.org/records/ZENODO_RECORD/files/tnwf-paper-data.tar.gz"
+curl -L -o tnwf-paper-data.tar.gz "https://zenodo.org/records/21845216/files/tnwf-paper-data.tar.gz"
 
 # Verify before unpacking. This digest is for the v2 archive built by
 # scripts/package_data_archive.py; the build is byte-reproducible, so
 # rebuilding from the same inputs reproduces it exactly.
-echo "c10a9173c6b3066e3c91b35eb6037faccc5ddd304244a22d38a4ad937ee949ba  tnwf-paper-data.tar.gz" | shasum -a 256 -c
+echo "adeedc702d9fb88c8170f6ad0f08998112b6e072a0251e401fc9e0a7db8e3c33  tnwf-paper-data.tar.gz" | shasum -a 256 -c
 
 # Unpack AT THE REPO ROOT — every member is rooted at data/, and several
 # generators hardcode relative paths like data/gmm_2d_hp/ with no CLI override.
