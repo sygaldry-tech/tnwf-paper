@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from tnwf.leaderboard import update_after_batch_subprocess as update_after_batch
 from tnwf.pipelines.run_evolution import run
 
 METHODS = [
@@ -52,7 +51,6 @@ def main():
                 n_samples=args.n_samples, method_kwargs=method_kwargs,
                 snapshot_psi=(method == "dense"),
             )
-            update_after_batch()
 
 
 if __name__ == "__main__":

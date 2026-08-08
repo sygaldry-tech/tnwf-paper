@@ -89,9 +89,8 @@ def sample_wf_coords_from_mps(mps, n, N, d, L, rng):
     `tnwf.pipelines.run_evolution.sample_from_mps` returns grid-frame coordinates
     spanning [-dx/2, L-dx/2)^d -- node-centered, see `tnwf.coords`. This module,
     like `gm_mode_centers` below, works in the centered world frame, so the L/2
-    offset must be removed. That is the same conversion the `--source npz` branch
-    applies to `samples_T`, and it matters: without it every sample is displaced
-    by L/2 and the tail labeling silently breaks.
+    offset must be removed. It matters: without it every sample is displaced by
+    L/2 and the tail labeling silently breaks.
     """
     return sample_from_mps(mps, N=N, d=d, L=L, n=n, rng=rng) - L / 2.0
 
@@ -101,7 +100,6 @@ def sample_wf_coords_from_mps(mps, n, N, d, L, rng):
 # ============================================================================
 OUT_DIR = os.path.join(_PROJECT_ROOT, "figures")
 PAPER_DIR = os.path.join(_PROJECT_ROOT, "examples/rare_event")  # Table-2 K=160 MPS cores
-NPZ_FALLBACK = os.path.join(PAPER_DIR, "fallback_K40_D16.npz")
 CKPT_DIR = os.path.join(_PROJECT_ROOT, "data/mps_v_checkpoints")
 
 D = 8
@@ -167,8 +165,7 @@ def load_wf_samples(source: str, seed: int, n_wf: int = N_WF):
         reps = sorted(glob.glob(os.path.join(PAPER_DIR, "rep*.npz")))
         if not reps:
             raise FileNotFoundError(
-                f"No Table-2 MPS cores under {PAPER_DIR}; expected rep*.npz. "
-                "Use --source npz for the reduced K=40/D_max=16 fallback.")
+                f"No Table-2 MPS cores under {PAPER_DIR}; expected rep*.npz.")
         per = int(np.ceil(n_wf / len(reps)))
         chunks, stored_unb = [], []
         for d_ in reps:
@@ -191,19 +188,6 @@ def load_wf_samples(source: str, seed: int, n_wf: int = N_WF):
                         paper_unbiased_ci=float(1.96 * np.std(stored_unb)
                                                 / np.sqrt(len(stored_unb))),
                         n_reps=len(reps), K=160, D_max=64, n_sw=n_sw)
-    elif source == "npz":
-        d = np.load(NPZ_FALLBACK)
-        shift = coords.resolve_shift(d, DX, path=NPZ_FALLBACK)
-        wf = d["samples_T"].astype(np.float64) - L / 2.0 + shift
-        n_sw = min(N_SW, len(wf))
-        sw = sliced_wasserstein(wf[:n_sw], target[:n_sw])
-        sw_legacy = sliced_wasserstein(wf[:n_sw] + DX / 2.0, target[:n_sw])
-        print(f"[load] fallback npz (reduced K=40/D_max=16): {wf.shape[0]} samples; "
-              f"SW={sw:.4f} (v1 convention {sw_legacy:.4f})", flush=True)
-        sw_stats = dict(sw=sw, sw_legacy_v1=sw_legacy,
-                        paper_unbiased_mean=float("nan"),
-                        paper_unbiased_ci=float("nan"), n_reps=1, K=40, D_max=16,
-                        n_sw=n_sw)
     else:
         raise ValueError(f"unknown source {source!r}")
     return wf, target, sw_stats
@@ -472,8 +456,8 @@ def make_master_figure(sw_data, wf, cl, centers, out_dir, seed=0,
 # ============================================================================
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--source", choices=["paper", "npz"], default="paper",
-                    help="WF state source: paper Table-2 K=160 (default) or reduced npz")
+    ap.add_argument("--source", choices=["paper"], default="paper",
+                    help="WF state source: the paper's Table-2 K=160 MPS cores")
     ap.add_argument("--tail-k", type=float, default=DEFAULT_TAIL_K)
     ap.add_argument("--n-samples", type=int, default=N_WF,
                     help="pooled Born samples per pipeline (default 40000)")

@@ -29,7 +29,7 @@ reads, is recomputed at the matching sample size.
 
 **``sw`` and ``mmd`` are not written.** A consumer that has not been updated
 should fail loudly rather than silently read a stale, biased number under a
-familiar key. ``_hp_utils`` and ``tnwf.leaderboard`` read ``sw_endpoint``.
+familiar key. ``_hp_utils`` reads ``sw_endpoint``.
 
 Usage
 -----

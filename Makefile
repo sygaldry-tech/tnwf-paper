@@ -1,7 +1,7 @@
 .PHONY: package-data licenses licenses-check verify-data exact-sw-floor help sync test test-needle test-medium \
         jam-all jam-swiss jam-gmm2 jam-gmm3 \
         run-swiss run-gmm2 run-gmm3 \
-        fig2 fig-tsne fig-cost-scaling supp notebook leaderboard leaderboard-nll clean-results \
+        fig2 fig-gmm-ode fig-tsne fig-cost-scaling supp notebook clean-results \
         fig-rare-event table1 table2 fig-scaling-bounds
 
 help:
@@ -78,6 +78,11 @@ run-gmm3:
 fig2:
 	uv run python scripts/make_fig2_dense_evolution.py
 
+# Paper Fig 3 (marginal-ODE view of the 2D GMM). Self-contained: it samples the
+# analytic target and integrates the flow, needing no archive data.
+fig-gmm-ode:
+	uv run python scripts/make_fig_gmm_ode.py
+
 # Require the gmm_*_hp* HP-sweep data (cloud sweeps, not shipped — see README).
 fig-tsne:
 	uv run python scripts/make_fig_tsne_grid.py
@@ -140,15 +145,7 @@ fig-rare-event:
 notebook:
 	uv run --with jupyter jupyter notebook examples/tnwf_demo.ipynb
 
-# ── leaderboard ───────────────────────────────────────────────────────────
-leaderboard:
-	uv run python -m tnwf.leaderboard --print
-
-leaderboard-nll:
-	uv run python -m tnwf.leaderboard --metric nll_mean --print
-
-# Pipeline outputs land under data/<dataset>/<method>/ (run_evolution.py:879),
-# not results/ — only the leaderboard is written to results/.
+# Pipeline outputs land under data/<dataset>/<method>/ (run_evolution.py:879).
 #
 # Scoped to the three datasets the runners regenerate, and to *.npz only. Do NOT
 # widen this to data/*/: that would delete the downloaded archive (the gmm_*_hp
@@ -160,4 +157,3 @@ clean-results:
 	@for ds in $(CLEAN_DATASETS); do \
 	  rm -f data/$$ds/*/seed*.npz data/$$ds/*/N*_K*/seed*.npz; \
 	done
-	rm -f results/leaderboard.csv results/leaderboard.md

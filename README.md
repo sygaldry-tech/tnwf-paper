@@ -205,8 +205,7 @@ so the figure contrasts the transports and sampling methods rather than two
 different velocity fields. `make fig-rare-event` fails with a pointer to the
 archive if the checkpoint is absent.
 
-`fallback_K40_D16.npz` is a reduced K=40/D_max=16 state for `--source npz`. The
-script writes the manuscript's filename
+The script writes the manuscript's filename
 (`figures/fig_rare_event_advantage.pdf`) directly and defaults to the paper's
 `--tail-k 4.0`, so a bare `python scripts/make_fig_rare_event.py` reproduces the
 figure. Takes ~1 min at the default 40,000 samples per pipeline.

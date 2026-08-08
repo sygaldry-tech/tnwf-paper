@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from tnwf.leaderboard import update_after_batch_subprocess as update_after_batch
 from tnwf.pipelines.run_evolution import run
 
 METHODS = [
@@ -57,7 +56,6 @@ def main():
                         out_dir=out_dir,
                         V_source=("analytic" if (args.analytic_V and method != "jam") else "jam"),
                     )
-                    update_after_batch()
 
 
 if __name__ == "__main__":
