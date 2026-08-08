@@ -10,7 +10,8 @@ repeated: the archive can be rescored in place of re-simulated.
 
 What it does, per results file
 ------------------------------
-* shifts ``samples_T`` and ``samples_per_step`` by ``-dx/2`` (grid methods only);
+* shifts ``samples_T``, and ``samples_per_step`` where the record still carries
+  it, by ``-dx/2`` (grid methods only);
 * recomputes the endpoint metrics from the corrected samples with a **fixed,
   recorded** projection seed, as ``sw_endpoint`` / ``mmd_endpoint``;
 * keeps the original arrays verbatim as ``sw_legacy_v1`` / ``mmd_legacy_v1``;
@@ -66,8 +67,15 @@ SW_NOISE_REPLICATES = 32
 
 #: Keys a results file must have before we will touch it. Anything else
 #: (traj.npz, checkpoints, CSVs) is copied through untouched.
-REQUIRED = {"samples_T", "samples_per_step", "target", "sw", "mmd",
+#:
+#: ``samples_per_step`` is deliberately absent: the published archive strips it
+#: (see scripts/package_data_archive.py), so requiring it would make this script
+#: refuse the very records it documents. It is still shifted when present.
+REQUIRED = {"samples_T", "target", "sw", "mmd",
             "N", "d", "K", "L", "method"}
+
+#: Sample arrays to shift, if the record carries them.
+SHIFT_KEYS = ("samples_T", "samples_per_step")
 
 # Gate tolerance on the offset, in units of dx.
 #
@@ -221,7 +229,9 @@ def migrate_file(path: Path, out: Path, method: str, dx: float) -> dict:
             return {"status": "already-v2"}
 
     shift = -coords.shift_for_method(method) * dx
-    for key in ("samples_T", "samples_per_step"):
+    for key in SHIFT_KEYS:
+        if key not in payload:
+            continue
         arr = np.asarray(payload[key], np.float64) + shift
         payload[key] = arr.astype(np.float32)
 
