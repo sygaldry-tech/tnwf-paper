@@ -7,8 +7,14 @@ Produces paper Fig. 8 as three square panels:
       tensor-network transport + amplitude amplification. Both pipelines are built on
       the SAME learned potential and each is costed on the state its own pipeline
       produces, so this is a pipeline comparison.
-  (b) the rejection-sampling harvest at a fixed budget.
-  (c) the amplitude-amplification harvest at the same budget.
+  (b) the rejection-sampling harvest at a fixed budget, on the flow-ODE state.
+  (c) the amplitude-amplification harvest at the same budget, on the
+      wavefunction-flow state.
+
+Panels (b,c) keep the SAME pairing as (a) -- each sampling method is shown on
+the state its own pipeline prepares -- so all three panels report one
+comparison. They share a single t-SNE fit taken over both clouds at once, which
+is what makes their ring densities comparable.
 
 Pipeline
 --------
@@ -317,7 +323,8 @@ def _axtag(ax, txt, inside=False):
                 fontweight="bold", va="bottom", ha="right")
 
 
-def make_master_figure(sw_data, wf, centers, out_dir, seed=0, tail_k=DEFAULT_TAIL_K):
+def make_master_figure(sw_data, wf, cl, centers, out_dir, seed=0,
+                       tail_k=DEFAULT_TAIL_K):
     """Three square panels: sampling cost, then the harvest split by method."""
     from sklearn.manifold import TSNE
 
@@ -372,28 +379,46 @@ def make_master_figure(sw_data, wf, centers, out_dir, seed=0, tail_k=DEFAULT_TAI
     _axtag(ax_cost, "(a)")
 
     # ---- (b,c) harvest at a fixed budget -----------------------------------
-    near, _, tail, resid = label_tails(wf, centers, tail_k)
+    # Each panel shows the state its OWN pipeline prepares: rejection sampling
+    # runs on the flow-ODE state, amplification on the wavefunction-flow state.
+    # Pairing both panels to the wavefunction-flow state instead would make (b,c)
+    # a different comparison from (a) -- the sampling method at fixed state
+    # quality, rather than the two pipelines -- and the two lifts would disagree
+    # (2.31x against panel (a)'s 2.51x) for a reason no reader could see.
     rng = np.random.default_rng(seed)
-    bulk_idx = np.flatnonzero(~tail & ~resid)
-    if len(bulk_idx) > 1600:
-        bulk_idx = rng.choice(bulk_idx, 1600, replace=False)
-    pool_idx = np.flatnonzero(tail)[:600]
+
+    def _cloud(pts):
+        _near, _, _tail, _resid = label_tails(pts, centers, tail_k)
+        bulk = np.flatnonzero(~_tail & ~_resid)
+        if len(bulk) > 1600:
+            bulk = rng.choice(bulk, 1600, replace=False)
+        return _near, bulk, np.flatnonzero(_tail)[:600]
+
+    near_c, bulk_c, pool_c = _cloud(cl)   # flow ODE      -> panel (b)
+    near_q, bulk_q, pool_q = _cloud(wf)   # wavefunction  -> panel (c)
+
+    # One t-SNE fit over both clouds, so the panels share a frame and the ring
+    # densities are directly comparable. Fitting each panel separately would put
+    # them in unrelated coordinates.
+    blocks = [cl[bulk_c], cl[pool_c], wf[bulk_q], wf[pool_q]]
     emb = TSNE(n_components=2, perplexity=30, init="pca",
-               random_state=seed).fit_transform(np.vstack([wf[bulk_idx],
-                                                           wf[pool_idx]]))
-    e_core, e_pool = emb[:len(bulk_idx)], emb[len(bulk_idx):]
+               random_state=seed).fit_transform(np.vstack(blocks))
+    cuts = np.cumsum([0] + [len(b) for b in blocks])
+    e_bulk_c, e_pool_c, e_bulk_q, e_pool_q = (emb[cuts[i]:cuts[i + 1]]
+                                              for i in range(4))
     cmap = plt.get_cmap("tab20")
 
     i_k = int(np.argmin(np.abs(k - tail_k)))
-    n_rej = min(int(round(BUDGET * a_wf[i_k])), len(pool_idx))
-    n_amp = min(int(round(BUDGET / preps_q[i_k])), len(pool_idx))
-    print(f"[harvest] Q={BUDGET} preparations at {tail_k:g} sigma "
-          f"(p={a_wf[i_k]:.5f}, amp cost {preps_q[i_k]:.2f}):  "
-          f"rejection={n_rej}  amplification={n_amp}  "
+    n_rej = min(int(round(BUDGET * a_cl[i_k])), len(pool_c))
+    n_amp = min(int(round(BUDGET / preps_q[i_k])), len(pool_q))
+    print(f"[harvest] Q={BUDGET} preparations at {tail_k:g} sigma:  "
+          f"rejection={n_rej} on the flow-ODE state (p={a_cl[i_k]:.5f})  "
+          f"amplification={n_amp} on the wavefunction-flow state "
+          f"(p={a_wf[i_k]:.5f}, cost {preps_q[i_k]:.2f})  "
           f"({n_amp / max(n_rej, 1):.2f}x)", flush=True)
 
-    def _panel(ax, idx, title, ring):
-        ax.scatter(e_core[:, 0], e_core[:, 1], s=30, c=cmap(near[bulk_idx] % 20),
+    def _panel(ax, e_core, near_all, bulk, e_pool, idx, title, ring):
+        ax.scatter(e_core[:, 0], e_core[:, 1], s=30, c=cmap(near_all[bulk] % 20),
                    alpha=0.16, linewidths=0)
         # Ring carries the method, matching that pipeline's color in (a); white fill so
         # the marker reads even where a bulk cluster shares the ring's hue.
@@ -403,9 +428,11 @@ def make_master_figure(sw_data, wf, centers, out_dir, seed=0, tail_k=DEFAULT_TAI
         ax.set_xticks([])
         ax.set_yticks([])
 
-    _panel(ax_rej, rng.choice(len(pool_idx), n_rej, replace=False),
+    _panel(ax_rej, e_bulk_c, near_c, bulk_c, e_pool_c,
+           rng.choice(len(pool_c), n_rej, replace=False),
            "rejection sampling", C_C)
-    _panel(ax_amp, rng.choice(len(pool_idx), n_amp, replace=False),
+    _panel(ax_amp, e_bulk_q, near_q, bulk_q, e_pool_q,
+           rng.choice(len(pool_q), n_amp, replace=False),
            "amplitude amplification", C_Q)
     _axtag(ax_rej, "(b)")
     _axtag(ax_amp, "(c)")
@@ -480,7 +507,8 @@ def main():
 
     print("\n=== cost per accepted rare sample ===", flush=True)
     s = sweep_thresholds(wf, cl, centers)
-    fitinfo = make_master_figure(s, wf, centers, OUT_DIR, args.seed, args.tail_k)
+    fitinfo = make_master_figure(s, wf, cl, centers, OUT_DIR, args.seed,
+                                 args.tail_k)
 
     i_k = int(np.argmin(np.abs(s["k"] - args.tail_k)))
     lift = s["preps_cl"][i_k] / s["preps_q"][i_k]
