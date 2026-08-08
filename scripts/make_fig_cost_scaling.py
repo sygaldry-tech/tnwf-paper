@@ -3,15 +3,15 @@
 1 row x 3 cols:
 
   (A) MPS / Dense memory  vs d   (log y).  Markers only.
-  (B) Walltime / Dense walltime  vs d  (log y).  Markers only.
+  (B) Evolution Walltime / Dense  vs d  (log y).  Markers only.
   (C) Best-cell accuracy (SW)  vs d  (linear y).  Markers only; dashed
       line at the ~0.1 good-reconstruction rule of thumb.
 
 Filtered to {Dense, TDVP1, TDVP2}.
 
 Usage:
-    uv run python scripts/make_fig4.py \\
-        --out figures/fig4_cost_scaling.pdf
+    uv run python scripts/make_fig_cost_scaling.py \\
+        --out figures/fig_cost_scaling.pdf
 """
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ TIMER = "evolve_time"
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--out",
-                   default="figures/fig4_cost_scaling.pdf")
+                   default="figures/fig_cost_scaling.pdf")
     args = p.parse_args()
 
     fig, axes = plt.subplots(1, 3, figsize=(18.5, 5.5), dpi=300,
@@ -80,7 +80,8 @@ def main():
     # three n x n kernels. That overhead is 0.5-3% at d >= 4 but over 90% at
     # d=2, enough to make d=2 look *more* expensive than d=3 -- impossible for
     # an N^d method, and it flattened the fit the d=8 projection rests on.
-    # Figure 6(b)'s caption says "total evolution time", which is this quantity.
+    # Figure 6(b)'s caption calls this the evolution walltime: the summed
+    # per-Trotter-step wall clock, excluding the per-step metric callback.
     dense_pts = [(d, table[(d, "dense")][TIMER])
                  for d, _ in DATASETS
                  if (d, "dense") in table
@@ -127,7 +128,7 @@ def main():
 
     for ax, key, ylabel, drop_d2, panel_letter in (
         (ax_mem_s,  "mem",        "MPS / Dense memory",        True,  "A"),
-        (ax_wall_s, "time_ratio", "Walltime / Dense walltime", False, "B"),
+        (ax_wall_s, "time_ratio", "Evolution Walltime / Dense", False, "B"),
     ):
         is_memory_panel = (ax is ax_mem_s)
         for m in SCALING_METHODS:

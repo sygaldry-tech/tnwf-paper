@@ -93,10 +93,6 @@ The manuscript has **8 figures + 2 tables**; the supplement adds **5 figures + 2
 tables**. The table below is exhaustive, so what is and is not released here is
 unambiguous.
 
-**Filenames do not match float numbers.** `fig3_tsne.pdf` is Fig 5 and
-`fig4_cost_scaling.pdf` is Fig 6 — those names date from an earlier draft ordering.
-Float numbers below follow the manuscript.
-
 ### Main text
 
 | Float | Asset | Generator | Status |
@@ -105,9 +101,9 @@ Float numbers below follow the manuscript.
 | Fig 2 | `fig2_dense.pdf` | `make_fig2_dense_evolution.py` | ✅ needs `jam/seed0.pt` |
 | Fig 3 | `fig_gmm_ode.pdf` | `make_fig_gmm_ode.py` | ✅ self-contained |
 | Fig 4 | `fig_scaling_bounds.pdf` | `make_fig_scaling_bounds.py` | ✅ needs `scaling_theory` CSVs |
-| Fig 5 | `fig3_tsne.pdf` | `make_fig3_tsne_grid.py` | ✅ needs sweeps |
+| Fig 5 | `fig_tsne_grid.pdf` | `make_fig_tsne_grid.py` | ✅ needs sweeps |
 | Table 1 | `table1_sw.tex` | `make_table1_sw.py` | ✅ needs sweeps |
-| Fig 6 | `fig4_cost_scaling.pdf` | `make_fig4.py` | ✅ needs sweeps |
+| Fig 6 | `fig_cost_scaling.pdf` | `make_fig_cost_scaling.py` | ✅ needs sweeps |
 | Fig 7 | `fig_ksweep_trained_std0.5_noHyb_wt.pdf` | *not released* | cloud (Modal) timing driver |
 | Table 2 | `table_scaling.tex` | `make_table2_scaling.py` | ✅ needs `timing_scaling` + MPS-V checkpoints |
 | Fig 8 | `fig_rare_event_advantage.pdf` | `make_fig_rare_event.py` | ✅ needs MPS-V checkpoints |
@@ -184,7 +180,7 @@ to live in this repository and is already present.
 With the archive unpacked, every reproducible float renders:
 
 ```bash
-make fig2 fig-scaling-bounds fig3 fig4 supp table1 table2
+make fig2 fig-scaling-bounds fig-tsne fig-cost-scaling supp table1 table2
 make fig-rare-event                                    # needs MPS-V checkpoints
 uv run python scripts/make_fig_gmm_ode.py              # needs no archive data
 ```
@@ -199,11 +195,11 @@ checkpoints are in the data archive at
 `data/{swiss_roll_2d,gmm_2d,gmm_3d}/jam/`; unpacking it is enough.
 
 **Fig 8 needs the MPS-V checkpoint**, unlike earlier releases where it was
-self-contained. Its quantum arm reads `examples/rare_event/rep*.npz` — the final
+self-contained. Its wavefunction-flow pipeline reads `examples/rare_event/rep*.npz` — the final
 MPS cores from the ten Table-2 replicates (N=32, K=160, D_max=64), converted from
 the original pickles so this repository ships no `pickle` payloads. But the
-classical arm integrates `grad V` of the *same* learned potential, which lives in
-`data/mps_v_checkpoints/` in the data archive. Using one potential for both arms
+flow-ODE pipeline integrates `grad V` of the *same* learned potential, which lives in
+`data/mps_v_checkpoints/` in the data archive. Using one potential for both pipelines
 is what makes the comparison fair: the learning error is then common to the two,
 so the figure contrasts the transports and sampling methods rather than two
 different velocity fields. `make fig-rare-event` fails with a pointer to the
@@ -213,9 +209,9 @@ archive if the checkpoint is absent.
 script writes the manuscript's filename
 (`figures/fig_rare_event_advantage.pdf`) directly and defaults to the paper's
 `--tail-k 4.0`, so a bare `python scripts/make_fig_rare_event.py` reproduces the
-figure. Takes ~1 min at the default 40,000 samples per arm.
+figure. Takes ~1 min at the default 40,000 samples per pipeline.
 
-**Fig 5 palette.** The color stops in `make_fig3_tsne_grid.py` are pinned as
+**Fig 5 palette.** The color stops in `make_fig_tsne_grid.py` are pinned as
 explicit magma triples (LUT indices 38 / 128 / 199) rather than `plt.cm.magma(f)`
 calls. magma is a 256-entry lookup table, so `magma(f)` is piecewise constant in
 `f` and an approximate `f` lands on a neighboring stop. Leave them pinned.

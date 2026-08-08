@@ -52,7 +52,7 @@ def amp_cost(a, nmax: int = 400, unit: str = "prep"):
 
     ``n = 0`` is always in the feasible set and costs exactly ``1/a`` -- plain
     rejection sampling on the prepared state -- so this rule can never be more
-    expensive than the classical arm on the same state, and the advantage
+    expensive than the flow-ODE pipeline on the same state, and the advantage
     switches on smoothly as ``a`` shrinks rather than dipping below unity.
 
     Args:

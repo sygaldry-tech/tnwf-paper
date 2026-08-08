@@ -7,8 +7,8 @@ structure is comparable WITHIN a panel; cross-panel coords are NOT comparable.
 The "Exact" row uses an independent target draw (visual sample-size floor).
 
 Usage:
-    uv run python scripts/make_fig3_tsne_grid.py \\
-        --out figures/fig3_tsne.pdf
+    uv run python scripts/make_fig_tsne_grid.py \\
+        --out figures/fig_tsne_grid.pdf
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ import numpy as np
 #
 # This file previously carried a Wong/Okabe-Ito palette (gray #cccccc target,
 # black Exact, vermillion #D55E00 TDVP1) predating the manuscript's switch to
-# magma. That was the cause of the mismatch against the committed fig3_tsne.pdf:
+# magma. That was the cause of the mismatch against the committed fig_tsne_grid.pdf:
 # the released script drew a stale palette, so the script needed correcting, not
 # the figure.
 #
@@ -104,7 +104,7 @@ def _tsne(joined: np.ndarray, seed: int = 0) -> np.ndarray:
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--out", default="figures/fig3_tsne.pdf")
+    p.add_argument("--out", default="figures/fig_tsne_grid.pdf")
     args = p.parse_args()
 
     ds = [3, 5, 7]

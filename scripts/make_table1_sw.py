@@ -1,7 +1,7 @@
 """Emit Table 1 of the paper: best-cell SW per (d, method) across d=2..8.
 
 Output is a LaTeX `tabular` block ready for `\\input{}` from the main TeX file.
-Row selection uses the same `_hp_utils.collect` helpers as `make_fig4.py`, so the
+Row selection uses the same `_hp_utils.collect` helpers as `make_fig_cost_scaling.py`, so the
 table's numbers are consistent with Fig 6.
 
 Layout: rows are Target--target / JAM / Dense / TCI+1TDVP / TCI+2TDVP; columns are

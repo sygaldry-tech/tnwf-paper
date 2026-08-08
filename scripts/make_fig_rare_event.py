@@ -4,7 +4,7 @@ Produces paper Fig. 8 as three square panels:
 
   (a) sampling cost -- state preparations per accepted rare sample against the
       rare-event probability p, for gradient flow + rejection sampling against
-      tensor-network transport + amplitude amplification. Both arms are built on
+      tensor-network transport + amplitude amplification. Both pipelines are built on
       the SAME learned potential and each is costed on the state its own pipeline
       produces, so this is a pipeline comparison.
   (b) the rejection-sampling harvest at a fixed budget.
@@ -12,7 +12,7 @@ Produces paper Fig. 8 as three square panels:
 
 Pipeline
 --------
-1. Quantum arm: the paper's V-MPS 2TDVP flow on the d=8 orthogonal Gaussian
+1. Wavefunction-flow pipeline: the paper's V-MPS 2TDVP flow on the d=8 orthogonal Gaussian
    mixture (16 modes at +-3.e_j, sigma=0.5), N=32, K=160, D_max=64, shipped as
    final MPS cores under `examples/rare_event/rep*.npz`. Born samples are drawn
    with `tnwf.pipelines.run_evolution.sample_from_mps` and pooled across the
@@ -23,9 +23,10 @@ Pipeline
    the right of the node, inflating SW to ~0.11; that convention is reconstructed
    and printed as `sw_legacy_v1` so the size of the correction stays visible.
 
-2. Classical arm: the same learned potential, integrated as a gradient flow
+2. Flow-ODE pipeline: the same learned potential, integrated as a gradient flow
    xdot = grad V. This is what makes the comparison fair -- the learning error is
-   common to both arms, so what differs is the transport and the sampling method.
+   common to both, so what differs is the transport and the sampling method.
+   Both pipelines are classical simulations; "quantum" would misname either.
    Requires the MPS-V checkpoint from the Zenodo data release.
 
 3. Rare events: nearest-mode k-sigma rule. Samples closer to the domain center
@@ -104,7 +105,7 @@ DX = L / N
 SIGMA = 0.5            # GMM component std
 SCALE = 3.0            # mode separation (centers at +-SCALE on each axis)
 DEFAULT_TAIL_K = 4.0   # rare-event threshold in units of sigma (the paper's value)
-N_WF = 40000           # pooled Born samples per arm; the >4sigma tail is ~9% of this
+N_WF = 40000           # pooled Born samples per pipeline; the >4sigma tail is ~9%
 N_SW = 4000            # samples used for SW only -- see below
 SEED = 0
 
@@ -203,13 +204,13 @@ def load_wf_samples(source: str, seed: int, n_wf: int = N_WF):
 
 
 # ============================================================================
-# Stage 2 -- classical arm: gradient flow under the SAME learned potential
+# Stage 2 -- flow-ODE pipeline: gradient flow under the SAME learned potential
 # ============================================================================
 def classical_gradient_flow(n, seed=0, kref=160, sub=4, chunk=5000):
     """Integrate xdot = grad V of the MPS-V oracle the tensor network consumes.
 
-    This is the classical arm of the pipeline comparison. Using the same learned
-    potential is the point: oracle error is then common to both arms, so panel
+    This is the flow-ODE pipeline of the comparison. Using the same learned
+    potential is the point: oracle error is then common to both, so panel
     (a) contrasts the transports and sampling methods rather than two different
     velocity fields.
 
@@ -226,7 +227,7 @@ def classical_gradient_flow(n, seed=0, kref=160, sub=4, chunk=5000):
     if not cands:
         raise FileNotFoundError(
             f"No d=8 MPS-V checkpoint under {CKPT_DIR}.\n"
-            "The classical gradient-flow arm needs it. Fetch the Zenodo data "
+            "The flow-ODE pipeline needs it. Fetch the Zenodo data "
             "release and place or symlink it at data/mps_v_checkpoints/.")
     ck = torch.load(cands[0], map_location="cpu", weights_only=True)
     a = ck["args"]
@@ -279,7 +280,7 @@ def label_tails(samples, centers, tail_k):
 # Stage 4 -- cost of a rare sample, swept over the threshold
 # ============================================================================
 def sweep_thresholds(wf, cl, centers):
-    """Tail masses and per-rare-sample costs for both arms, over THRESHOLDS.
+    """Tail masses and per-rare-sample costs for both pipelines, over THRESHOLDS.
 
     Rejection costs 1/p preparations per accepted rare sample -- an identity,
     not a model. Amplification costs `amp_cost(p)`; see `tnwf.amp` for why the
@@ -394,7 +395,7 @@ def make_master_figure(sw_data, wf, centers, out_dir, seed=0, tail_k=DEFAULT_TAI
     def _panel(ax, idx, title, ring):
         ax.scatter(e_core[:, 0], e_core[:, 1], s=30, c=cmap(near[bulk_idx] % 20),
                    alpha=0.16, linewidths=0)
-        # Ring carries the method, matching that arm's color in (a); white fill so
+        # Ring carries the method, matching that pipeline's color in (a); white fill so
         # the marker reads even where a bulk cluster shares the ring's hue.
         ax.scatter(e_pool[idx, 0], e_pool[idx, 1], s=58, facecolors="white",
                    edgecolors=ring, linewidths=1.8, zorder=4)
@@ -448,7 +449,7 @@ def main():
                     help="WF state source: paper Table-2 K=160 (default) or reduced npz")
     ap.add_argument("--tail-k", type=float, default=DEFAULT_TAIL_K)
     ap.add_argument("--n-samples", type=int, default=N_WF,
-                    help="pooled Born samples per arm (default 40000)")
+                    help="pooled Born samples per pipeline (default 40000)")
     ap.add_argument("--seed", type=int, default=SEED)
     args = ap.parse_args()
 
