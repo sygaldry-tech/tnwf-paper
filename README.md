@@ -30,6 +30,23 @@ flow with tensor network methods, evolving a wavefunction MPS under
    cross. Train with `python -m tnwf.mps_v.train`; run via
    `run(method="mps_v_tdvp2", ...)`.
 
+## Layout
+
+```
+tnwf/
+├── src/tnwf/             # package: jam/, mps_v/, mps/, mpo/, dense/, metrics/, data/, pipelines/, amp.py
+├── tests/                # pytest suite mirroring src/tnwf/
+├── scripts/make_*.py     # one generator per paper float
+├── scripts/{dataset}/    # per-dataset runners (train_jam, run_all_methods)
+├── examples/rare_event/  # Fig 8's MPS cores (the only bulk data tracked here)
+├── pyproject.toml        # package + dependency declarations
+└── uv.lock               # fully pinned dependency lock
+```
+
+Everything under `scripts/` either generates a manuscript float or produces the
+sweep data one consumes. `figures/`, `results/` and the bulk of `data/` are
+generated or downloaded, and are not version-controlled.
+
 ## Installation
 
 [uv](https://docs.astral.sh/uv/), Python ≥ 3.11:
@@ -150,23 +167,6 @@ make fig2 fig-scaling-bounds fig-tsne fig-cost-scaling supp table1 table2
 make fig-rare-event                                    # needs MPS-V checkpoints
 uv run python scripts/make_fig_gmm_ode.py              # needs no archive data
 ```
-
-## Layout
-
-```
-tnwf/
-├── src/tnwf/             # package: jam/, mps_v/, mps/, mpo/, dense/, metrics/, data/, pipelines/, amp.py
-├── tests/                # pytest suite mirroring src/tnwf/
-├── scripts/make_*.py     # one generator per paper float
-├── scripts/{dataset}/    # per-dataset runners (train_jam, run_all_methods)
-├── examples/rare_event/  # Fig 8's MPS cores (the only bulk data tracked here)
-├── pyproject.toml        # package + dependency declarations
-└── uv.lock               # fully pinned dependency lock
-```
-
-Everything under `scripts/` either generates a manuscript float or produces the
-sweep data one consumes. `figures/`, `results/` and the bulk of `data/` are
-generated or downloaded, and are not version-controlled.
 
 ## License & dependencies
 
