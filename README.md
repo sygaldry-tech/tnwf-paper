@@ -203,7 +203,7 @@ below. [`CITATION.cff`](CITATION.cff) carries the same details in machine-readab
 form, which is what GitHub's **Cite this repository** button reads.
 
 ```bibtex
-@misc{kodama2026scalable,
+@misc{Kodama2026,
   author        = {Kodama, Nathan X. and Wray, L. Andrew and Cochran, Sam and
                    Rigetti, Chad and Veerapaneni, Shravan and Keiser, Michael J.},
   title         = {Scalable quantum simulation of continuous-time generative
@@ -216,7 +216,3 @@ form, which is what GitHub's **Cite this repository** button reads.
   url           = {https://arxiv.org/abs/XXXX.XXXXX}
 }
 ```
-
-To cite the data archive on its own — for instance if you use the sweeps without
-the paper — use its own DOI,
-[10.5281/zenodo.21845216](https://doi.org/10.5281/zenodo.21845216).
