@@ -90,41 +90,9 @@ make notebook        # or: uv run --with jupyter jupyter notebook examples/tnwf_
 
 Jupyter is pulled in on demand, so it stays out of the locked dependencies.
 
-## Reproducing the paper figures
-
-Each generator writes to a relative `figures/` path (override with `--out`). The
-table covers all ten main-text floats, so what is and is not released is
-unambiguous.
-
-| Float | Asset | Generator | Status |
-|---|---|---|---|
-| Fig 1 | `fig1_overview_tikz.pdf` | — | TikZ, built in the LaTeX source |
-| Fig 2 | `fig2_dense.pdf` | `make_fig2_dense_evolution.py` | ✅ needs `jam/seed0.pt` |
-| Fig 3 | `fig_gmm_ode.pdf` | `make_fig_gmm_ode.py` | ✅ self-contained |
-| Fig 4 | `fig_scaling_bounds.pdf` | `make_fig_scaling_bounds.py` | ✅ needs `scaling_theory` CSVs |
-| Fig 5 | `fig_tsne_grid.pdf` | `make_fig_tsne_grid.py` | ✅ needs sweeps |
-| Table 1 | `table1_sw.tex` | `make_table1_sw.py` | ✅ needs sweeps |
-| Fig 6 | `fig_cost_scaling.pdf` | `make_fig_cost_scaling.py` | ✅ needs sweeps |
-| Fig 7 | `fig_ksweep_trained_std0.5_noHyb_wt.pdf` | *not released* | cloud (Modal) timing driver |
-| Table 2 | `table_scaling.tex` | `make_table2_scaling.py` | ✅ needs `timing_scaling` + MPS-V checkpoints |
-| Fig 8 | `fig_rare_event_advantage.pdf` | `make_fig_rare_event.py` | ✅ needs MPS-V checkpoints |
-
-**Fig 2–6, Fig 8 and Tables 1–2 reproduce exactly** — byte- or content-identical
-to the manuscript. Fig 1 is built by LaTeX. Fig 7 is the only main-text float not
-released; it comes from a cloud (Modal) timing driver.
-
-From the supplement, only **Fig S1** is reproducible here — `make supp`, and it
-needs the same sweeps as Fig 5. The remaining supplement floats depend on cloud
-drivers or on intermediate outputs that were not preserved.
-
-Fig 4 ships only the *plotting* half of the analytic scaling study: the
-`data/scaling_theory/` cache is in the archive below, but the compute pass that
-produces it depends on unreleased solver code. The figure reproduces exactly
-from that cache; its numbers are not re-derived.
-
 ## Getting the data archive
 
-Floats marked "needs …" read from `data/`, which is **not in this repository** —
+Most of the floats below read from `data/`, which is **not in this repository** —
 41 MB unpacked, almost all hyperparameter sweeps. It is deposited openly under
 CC-BY-4.0 and downloadable without request.
 
@@ -167,6 +135,38 @@ make fig2 fig-scaling-bounds fig-tsne fig-cost-scaling supp table1 table2
 make fig-rare-event                                    # needs MPS-V checkpoints
 uv run python scripts/make_fig_gmm_ode.py              # needs no archive data
 ```
+
+## Reproducing the paper figures
+
+Each generator writes to a relative `figures/` path (override with `--out`). The
+table covers all ten main-text floats, so what is and is not released is
+unambiguous.
+
+| Float | Asset | Generator | Status |
+|---|---|---|---|
+| Fig 1 | `fig1_overview_tikz.pdf` | — | TikZ, built in the LaTeX source |
+| Fig 2 | `fig2_dense.pdf` | `make_fig2_dense_evolution.py` | ✅ needs `jam/seed0.pt` |
+| Fig 3 | `fig_gmm_ode.pdf` | `make_fig_gmm_ode.py` | ✅ self-contained |
+| Fig 4 | `fig_scaling_bounds.pdf` | `make_fig_scaling_bounds.py` | ✅ needs `scaling_theory` CSVs |
+| Fig 5 | `fig_tsne_grid.pdf` | `make_fig_tsne_grid.py` | ✅ needs sweeps |
+| Table 1 | `table1_sw.tex` | `make_table1_sw.py` | ✅ needs sweeps |
+| Fig 6 | `fig_cost_scaling.pdf` | `make_fig_cost_scaling.py` | ✅ needs sweeps |
+| Fig 7 | `fig_ksweep_trained_std0.5_noHyb_wt.pdf` | *not released* | cloud (Modal) timing driver |
+| Table 2 | `table_scaling.tex` | `make_table2_scaling.py` | ✅ needs `timing_scaling` + MPS-V checkpoints |
+| Fig 8 | `fig_rare_event_advantage.pdf` | `make_fig_rare_event.py` | ✅ needs MPS-V checkpoints |
+
+**Fig 2–6, Fig 8 and Tables 1–2 reproduce exactly** — byte- or content-identical
+to the manuscript. Fig 1 is built by LaTeX. Fig 7 is the only main-text float not
+released; it comes from a cloud (Modal) timing driver.
+
+From the supplement, only **Fig S1** is reproducible here — `make supp`, and it
+needs the same sweeps as Fig 5. The remaining supplement floats depend on cloud
+drivers or on intermediate outputs that were not preserved.
+
+Fig 4 ships only the *plotting* half of the analytic scaling study: the
+`data/scaling_theory/` cache is in the archive above, but the compute pass that
+produces it depends on unreleased solver code. The figure reproduces exactly
+from that cache; its numbers are not re-derived.
 
 ## License & dependencies
 
