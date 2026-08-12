@@ -5,9 +5,9 @@ Reproduction code for the preprint of the same name.
 > 📄 Preprint: _link to appear (arXiv)_
 > 🔖 To cite, see [Paper citation](#paper-citation).
 
-![Dense wavefunction evolution on the Swiss roll target](assets/fig2_dense.png)
+![Wavefunction evolution on the Swiss roll target](assets/fig2_dense.png)
 
-*Paper Fig. 2 — dense wavefunction evolution (N=64). Top: ψ(t) (hue = arg ψ,
+*Wavefunction evolution (Fig 2 of the paper). Top: ψ(t) (hue = arg ψ,
 brightness = |ψ|). Bottom: |ψ(t)|². The dynamics under Hᶜ = i[K, Vₜ] transport
 the Gaussian source into the target.*
 
