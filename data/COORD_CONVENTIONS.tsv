@@ -14,7 +14,6 @@
 # Format: <glob><TAB><convention>. First match wins.
 
 # --- Shipped demo/figure artifacts written under the v1 convention ----------
-examples/rare_event/fallback_K40_D16.npz	node_lower_left_v1
 examples/checkpoints/mps_v_gmm_d8_result.npz	node_lower_left_v1
 
 # --- Final MPS cores: no sample coordinates stored, sampled live at read time
