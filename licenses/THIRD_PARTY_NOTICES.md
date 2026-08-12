@@ -84,7 +84,7 @@ actually ships the component here — in practice scipy.
 | networkx | 3.6.1 | BSD-3-Clause | Copyright (c) 2004-2025, NetworkX Developers | [`networkx-LICENSE.txt`](networkx-LICENSE.txt) |
 | numpy | 2.4.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | Copyright (c) 2005-2025, NumPy Developers.; Copyright (c) 2011-2014, The OpenBLAS Project; Copyright (c) 1992-2013 The University of Tennessee and The University; Copyright (c) 2000-2013 The University of California Berkeley. All | [`numpy-LICENSE.txt`](numpy-LICENSE.txt) |
 | packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | *(no notice in file; author: Donald Stufft <donald@stufft.io>)* | [`packaging-LICENSE`](packaging-LICENSE) |
-| pillow | 12.2.0 | MIT-CMU | Copyright © 1997-2011 by Secret Labs AB; Copyright © 1995-2011 by Fredrik Lundh and contributors; Copyright © 2010 by Jeffrey 'Alex' Clark and contributors; Copyright (c) 2016, Alliance for Open Media. All rights reserved. | [`pillow-LICENSE`](pillow-LICENSE) |
+| pillow | 12.3.0 | MIT-CMU | Copyright © 1997-2011 by Secret Labs AB; Copyright © 1995-2011 by Fredrik Lundh and contributors; Copyright © 2010 by Jeffrey 'Alex' Clark and contributors; Copyright (c) 2016, Alliance for Open Media. All rights reserved. | [`pillow-LICENSE`](pillow-LICENSE) |
 | pluggy | 1.6.0 | MIT | Copyright (c) 2015 holger krekel (rather uses bitbucket/hpk42) | [`pluggy-LICENSE`](pluggy-LICENSE) |
 | pygments | 2.20.0 | BSD-2-Clause | Copyright (c) 2006-2022 by the respective authors (see AUTHORS file). | [`pygments-LICENSE`](pygments-LICENSE) |
 | pyparsing | 3.3.2 | MIT | Copyright (c) 2003-2025  Paul McGuire | [`pyparsing-LICENSE`](pyparsing-LICENSE) |
@@ -92,7 +92,7 @@ actually ships the component here — in practice scipy.
 | python-dateutil | 2.9.0.post0 | Apache-2.0 OR BSD-3-Clause | Copyright 2017- Paul Ganssle <paul@ganssle.io>; Copyright 2017- dateutil contributors (see AUTHORS file); Copyright (c) 2003-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>; Copyright (c) 2012-2014 - Tomi Pieviläinen <tomi.pievilainen@iki.fi> | [`python-dateutil-LICENSE`](python-dateutil-LICENSE) |
 | scikit-learn | 1.8.0 | BSD-3-Clause | Copyright (c) 2007-2024 The scikit-learn developers.; Copyright (c) 2003-2019 University of Illinois at Urbana-Champaign. | [`scikit-learn-COPYING`](scikit-learn-COPYING) |
 | scipy | 1.17.1 | BSD-3-Clause (bundles copyleft components — see note) | Copyright (c) 2001-2002 Enthought, Inc. 2003, SciPy Developers.; Copyright (c) 2011-2014, The OpenBLAS Project; Copyright (c) 1992-2013 The University of Tennessee and The University; Copyright (c) 2000-2013 The University of California Berkeley. All | [`scipy-LICENSE.txt`](scipy-LICENSE.txt) |
-| setuptools | 81.0.0 | MIT | *(no notice in file; author: Python Packaging Authority <distutils-sig@python.org>)* | [`setuptools-LICENSE`](setuptools-LICENSE) |
+| setuptools | 84.0.0 | MIT | *(no notice in file; author: Python Packaging Authority <distutils-sig@python.org>)* | [`setuptools-LICENSE`](setuptools-LICENSE) |
 | six | 1.17.0 | MIT | Copyright (c) 2010-2024 Benjamin Peterson | [`six-LICENSE`](six-LICENSE) |
 | sympy | 1.14.0 | BSD-3-Clause | Copyright (c) 2006-2023 SymPy Development Team; Copyright (c) 2006-2018 SymPy Development Team,; Copyright (c) 2014 Matthew Rocklin; Copyright (c) 2009-2023, PyDy Authors | [`sympy-LICENSE`](sympy-LICENSE) |
 | threadpoolctl | 3.6.0 | BSD-3-Clause | Copyright (c) 2019, threadpoolctl contributors | [`threadpoolctl-LICENSE`](threadpoolctl-LICENSE) |
