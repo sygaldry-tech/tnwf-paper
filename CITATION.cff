@@ -7,9 +7,11 @@ abstract: >-
   V-step of a wavefunction-flow evolution with tensor-network methods
   (TCI + TDVP).
 type: software
-# Author order and affiliations mirror sn-article.tex. Cochran and Veerapaneni
-# are jointly affiliated; CFF takes one affiliation per author, so each carries
-# the one listed first in the manuscript.
+# Author order and affiliations mirror sn-article.tex, where every author is
+# listed at Sygaldry alone. Cochran and Veerapaneni previously carried a
+# University of Michigan affiliation here; it was removed to match authors.tex,
+# which records that removal as deliberate. Do not reinstate it without
+# checking there first.
 # TODO(author): an ORCID is still needed for Chad Rigetti
 # (`orcid: "https://orcid.org/0000-..."`, in both author blocks).
 authors:
@@ -24,14 +26,14 @@ authors:
     orcid: "https://orcid.org/0000-0001-8977-0201"
   - given-names: Sam
     family-names: Cochran
-    affiliation: "University of Michigan, Ann Arbor, MI, USA"
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
     orcid: "https://orcid.org/0000-0002-5538-641X"
   - given-names: Chad
     family-names: Rigetti
     affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
   - given-names: Shravan
     family-names: Veerapaneni
-    affiliation: "University of Michigan, Ann Arbor, MI, USA"
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
     orcid: "https://orcid.org/0000-0002-2294-7233"
   - given-names: "Michael J."
     family-names: Keiser
@@ -59,14 +61,14 @@ preferred-citation:
       orcid: "https://orcid.org/0000-0001-8977-0201"
     - given-names: Sam
       family-names: Cochran
-      affiliation: "University of Michigan, Ann Arbor, MI, USA"
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
       orcid: "https://orcid.org/0000-0002-5538-641X"
     - given-names: Chad
       family-names: Rigetti
       affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
     - given-names: Shravan
       family-names: Veerapaneni
-      affiliation: "University of Michigan, Ann Arbor, MI, USA"
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
       orcid: "https://orcid.org/0000-0002-2294-7233"
     - given-names: "Michael J."
       family-names: Keiser
