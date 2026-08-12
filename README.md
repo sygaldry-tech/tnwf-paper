@@ -1,12 +1,11 @@
 # tnwf — Scalable quantum simulation of continuous-time generative models via tensor networks
 
-Reproduction code for the paper of the same name (npj Quantum Information, in
-submission).
+Reproduction code for the preprint of the same name.
 
-> 📄 Paper: _link to appear (arXiv / journal)_
+> 📄 Preprint: _link to appear (arXiv)_
 > 🔖 To cite, see [`CITATION.cff`](CITATION.cff).
 
-![Dense wavefunction evolution on the Swiss-roll target](assets/fig2_dense.png)
+![Dense wavefunction evolution on the Swiss roll target](assets/fig2_dense.png)
 
 *Paper Fig. 2 — dense wavefunction evolution (N=64). Top: ψ(t) (hue = arg ψ,
 brightness = |ψ|). Bottom: |ψ(t)|². The dynamics under Hᶜ = i[K, Vₜ] transport
@@ -26,7 +25,7 @@ flow with tensor network methods, evolving a wavefunction MPS under
 1. **Dense** — exact `O(N^d)` reference
 2. **TCI+TDVP1** — TT-cross MPO + 1-site TDVP
 3. **TCI+TDVP2** — TT-cross MPO + 2-site TDVP
-4. **MPS-V + 2TDVP** — a velocity potential pretrained as a tensor train
+4. **MPS-V + 2TDVP** — a velocity potential pre-trained as a matrix product state
    (`tnwf.mps_v`) fed straight to the 2-site TDVP V-step, with no runtime tensor
    cross. Train with `python -m tnwf.mps_v.train`; run via
    `run(method="mps_v_tdvp2", ...)`.
@@ -61,7 +60,7 @@ with outputs rendered and is viewable on GitHub without running anything.
 - **Part 1** — `Dense` vs `TCI+1TDVP` on a 3-D Gaussian mixture, t-SNE overlay
   against the target (paper **Fig. 5**, left / *d*=3).
 - **Part 2** — the **MPS-V + 2TDVP** pipeline at *d*=8, σ=0.5, loading the
-  paper's **Table 2** run (N=32, K=160): grid-unbiased sliced-Wasserstein
+  paper's **Table 2** run (N=32, K=160): grid-unbiased sliced Wasserstein
   0.036 ± 0.003 against a sample-size floor of 0.030, self-limiting bond
   χ\* ≈ 16. The shipped `.npz` in
   [`examples/checkpoints/`](examples/checkpoints) holds that run's per-step
@@ -175,7 +174,7 @@ original. The originals are in the archive at
 **Fig 8 needs the MPS-V checkpoint.** Its wavefunction flow pipeline reads
 `examples/rare_event/rep*.npz` — the final MPS cores from the ten Table 2
 replicates (N=32, K=160, D_max=64), converted from the original pickles so this
-repository ships no `pickle` payloads. The flow-ODE pipeline integrates `grad V`
+repository ships no `pickle` payloads. The flow ODE pipeline integrates `grad V`
 of the *same* learned potential, which lives in `data/mps_v_checkpoints/`. Using
 one potential for both pipelines is what makes the comparison fair: the learning
 error is then common to the two, so the figure contrasts the transports and
@@ -214,14 +213,6 @@ Dependencies are pinned in [`uv.lock`](uv.lock). The license of every one of the
 30 third-party packages is reproduced in full under [`licenses/`](licenses/),
 indexed by
 [`licenses/THIRD_PARTY_NOTICES.md`](licenses/THIRD_PARTY_NOTICES.md).
-
-**Run this on CPU.** No GPU is needed: the generators rebuild every figure and
-table from the archived data. `torch` is pinned to the PyTorch CPU index — see
-`[tool.uv.sources]` in `pyproject.toml` — so a default install pulls no NVIDIA
-package at all. Installing `torch` from the default index instead, which is what
-GPU retraining requires, resolves roughly 19 further packages under the NVIDIA
-CUDA Toolkit EULA and NVIDIA Software License Agreement; those are proprietary
-terms between you and NVIDIA, and nothing here licenses them to you.
 
 Every package's own code is permissively licensed (MIT, BSD, Apache-2.0, PSF).
 Two components are not, and are disclosed in the notices: `scipy`'s wheel ships
