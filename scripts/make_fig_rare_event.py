@@ -25,9 +25,7 @@ Pipeline
    independent MPS-V initializations the paper averages over.
 
    Note on SW: Born samples are dithered about the grid node (`tnwf.coords`), so
-   the coordinates need no half-cell correction. Releases up to v1 dithered to
-   the right of the node, inflating SW to ~0.11; that convention is reconstructed
-   and printed as `sw_legacy_v1` so the size of the correction stays visible.
+   the coordinates need no half-cell correction.
 
 2. Flow-ODE pipeline: the same learned potential, integrated as a gradient flow
    xdot = grad V. This is what makes the comparison fair -- the learning error is
@@ -105,7 +103,6 @@ CKPT_DIR = os.path.join(_PROJECT_ROOT, "data/mps_v_checkpoints")
 D = 8
 N = 32                 # spatial grid (paper config); dx = L/N
 L = 8.0                # domain edge; centered physical frame is [-L/2, L/2]^d
-DX = L / N
 SIGMA = 0.5            # GMM component std
 SCALE = 3.0            # mode separation (centers at +-SCALE on each axis)
 DEFAULT_TAIL_K = 4.0   # rare-event threshold in units of sigma (the paper's value)
@@ -177,13 +174,11 @@ def load_wf_samples(source: str, seed: int, n_wf: int = N_WF):
         rng.shuffle(wf)
         n_sw = min(N_SW, len(wf))
         sw = sliced_wasserstein(wf[:n_sw], target[:n_sw])
-        sw_legacy = sliced_wasserstein(wf[:n_sw] + DX / 2.0, target[:n_sw])
         print(f"[load] paper Table-2 state: pooled {wf.shape[0]} Born samples over "
               f"{len(reps)} MPS-V reps (K=160, N={N}, D_max=64)", flush=True)
-        print(f"       SW={sw:.4f} on n={n_sw} (v1 half-cell convention would "
-              f"give {sw_legacy:.4f})  "
+        print(f"       SW={sw:.4f} on n={n_sw}  "
               f"(paper Table-2 per-rep mean={np.mean(stored_unb):.4f})", flush=True)
-        sw_stats = dict(sw=sw, sw_legacy_v1=sw_legacy,
+        sw_stats = dict(sw=sw,
                         paper_unbiased_mean=float(np.mean(stored_unb)),
                         paper_unbiased_ci=float(1.96 * np.std(stored_unb)
                                                 / np.sqrt(len(stored_unb))),
@@ -484,8 +479,7 @@ def main():
     print(f"  a_cl  (gradient flow, same potential)        = {_pct(a_cl)}")
     print(f"  residual (untransported): target={_pct(tgt_lab[3].mean())}  "
           f"WF={_pct(wf_lab[3].mean())}")
-    print(f"  SW^wf_T: {sw['sw']:.4f} on n={sw['n_sw']}  "
-          f"(v1 convention: {sw['sw_legacy_v1']:.4f})")
+    print(f"  SW^wf_T: {sw['sw']:.4f} on n={sw['n_sw']}")
     print(f"  tail over-population: a_wf/a* = {a_wf / a_star:.2f}x "
           f"(target/a* = {a_tgt / a_star:.2f}x)")
 
@@ -511,7 +505,7 @@ def main():
         tail_k=args.tail_k, sigma=SIGMA, scale=SCALE, d=D, L=L, source=args.source,
         n_samples=args.n_samples, budget=BUDGET,
         a_star=a_star, a_tgt=a_tgt, a_wf=a_wf, a_cl=a_cl,
-        sw=sw["sw"], sw_legacy_v1=sw["sw_legacy_v1"], n_sw=sw["n_sw"],
+        sw=sw["sw"], n_sw=sw["n_sw"],
         paper_unbiased_mean=sw["paper_unbiased_mean"],
         target=target.astype(np.float32), wf=wf.astype(np.float32),
         cl=cl.astype(np.float32),

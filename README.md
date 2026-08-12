@@ -131,7 +131,7 @@ curl -L -o tnwf-paper-data.tar.gz "https://zenodo.org/records/21845216/files/tnw
 
 # Verify before unpacking. The build is byte-reproducible, so rebuilding from
 # the same inputs reproduces this digest exactly.
-echo "a6507894a3334221c05d3f9a08c83630f16ccc91837ed607770868e1511a19cf  tnwf-paper-data.tar.gz" | shasum -a 256 -c
+echo "4da989236643f206da1a4a98e8e6b75be0f1076cb5955ece66e30f77a62bdd26  tnwf-paper-data.tar.gz" | shasum -a 256 -c
 
 # Unpack AT THE REPO ROOT — every member is rooted at data/, and several
 # generators hardcode relative paths like data/gmm_2d_hp/ with no CLI override.

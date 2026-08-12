@@ -21,8 +21,12 @@ Four deliberate choices:
 * `samples_per_step` is **stripped** from each sweep record. It is a
   `(K+1, 200, d)` trajectory subsample and the largest member by far, but no
   figure or table opens it; the endpoint cloud the generators actually plot is
-  `samples_T`, which is kept. Every metric, the bond-dimension trajectory, the
-  timings and the pre-migration `*_legacy_v1` values are kept as well.
+  `samples_T`, which is kept. Every published metric, the bond-dimension
+  trajectory and the timings are kept as well.
+* `sw_legacy_v1` and `mmd_legacy_v1` are **stripped** for the same reason: they
+  are the endpoint metrics as computed before the node-centering convention was
+  adopted, no generator reads them, and every metric a published number depends
+  on is the `*_endpoint` value that remains.
 * `MANIFEST.tsv` is regenerated to describe exactly what the tarball contains,
   rather than copied from the source tree, so `make verify-data` on an unpacked
   copy checks the archive rather than the tree it was built from.
@@ -65,7 +69,7 @@ FIXED_ZIP_DATE = (2026, 1, 1, 0, 0, 0)
 EXCLUDE_METHODS = {"aci", "tci_als"}
 
 #: npz members dropped on the way into the archive. See the module docstring.
-DROP_MEMBERS = {"samples_per_step"}
+DROP_MEMBERS = {"samples_per_step", "sw_legacy_v1", "mmd_legacy_v1"}
 
 
 def repo_tracked_under_data() -> set[str]:
