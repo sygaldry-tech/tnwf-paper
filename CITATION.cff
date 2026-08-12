@@ -10,12 +10,14 @@ type: software
 # Author order and affiliations mirror sn-article.tex. Cochran and Veerapaneni
 # are jointly affiliated; CFF takes one affiliation per author, so each carries
 # the one listed first in the manuscript.
-# TODO(author): add ORCIDs (`orcid: "https://orcid.org/0000-..."` per author).
+# TODO(author): ORCIDs for the remaining five authors
+# (`orcid: "https://orcid.org/0000-..."` per author).
 authors:
   - given-names: "Nathan X."
     family-names: Kodama
     email: nathan@sygaldry.com
     affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-6818-9669"
   - given-names: "L. Andrew"
     family-names: Wray
     affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
@@ -61,6 +63,14 @@ preferred-citation:
     - given-names: "Michael J."
       family-names: Keiser
       affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
-  journal: "npj Quantum Information"  # TODO(author): confirm on acceptance
-  year: 2026                          # TODO(author): update
-  # doi: TODO
+  # Cite the arXiv preprint. CFF 1.2.0 has no "preprint" type, so this is
+  # `article` with arXiv's DataCite DOI and no `journal` field -- the work is not
+  # in a journal, and naming one before acceptance would assert something untrue.
+  # `journal` is not required for type: article.
+  #
+  # TODO(author): on posting, fill both fields from the arXiv identifier --
+  # 2608.01234 gives doi 10.48550/arXiv.2608.01234 and the matching abs URL.
+  # doi: "10.48550/arXiv.XXXXXXXXX"
+  # url: "https://arxiv.org/abs/XXXXXXXXX"
+  year: 2026
+  license: CC-BY-4.0
