@@ -10,8 +10,8 @@ type: software
 # Author order and affiliations mirror sn-article.tex. Cochran and Veerapaneni
 # are jointly affiliated; CFF takes one affiliation per author, so each carries
 # the one listed first in the manuscript.
-# TODO(author): ORCIDs for the remaining five authors
-# (`orcid: "https://orcid.org/0000-..."` per author).
+# TODO(author): ORCIDs still needed for Chad Rigetti and Shravan Veerapaneni
+# (`orcid: "https://orcid.org/0000-..."`, in both author blocks).
 authors:
   - given-names: "Nathan X."
     family-names: Kodama
@@ -21,9 +21,11 @@ authors:
   - given-names: "L. Andrew"
     family-names: Wray
     affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0001-8977-0201"
   - given-names: Sam
     family-names: Cochran
     affiliation: "University of Michigan, Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-5538-641X"
   - given-names: Chad
     family-names: Rigetti
     affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
@@ -33,6 +35,7 @@ authors:
   - given-names: "Michael J."
     family-names: Keiser
     affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-1240-2192"
 repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
 license: MIT
 # The hyperparameter-sweep data this code consumes is archived separately.
@@ -48,12 +51,15 @@ preferred-citation:
       family-names: Kodama
       email: nathan@sygaldry.com
       affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-6818-9669"
     - given-names: "L. Andrew"
       family-names: Wray
       affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0001-8977-0201"
     - given-names: Sam
       family-names: Cochran
       affiliation: "University of Michigan, Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-5538-641X"
     - given-names: Chad
       family-names: Rigetti
       affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
@@ -63,6 +69,7 @@ preferred-citation:
     - given-names: "Michael J."
       family-names: Keiser
       affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-1240-2192"
   # Cite the arXiv preprint. CFF 1.2.0 has no "preprint" type, so this is
   # `article` with arXiv's DataCite DOI and no `journal` field -- the work is not
   # in a journal, and naming one before acceptance would assert something untrue.
