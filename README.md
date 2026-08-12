@@ -238,12 +238,14 @@ version-controlled — see the archive section above.
 Dependencies are pinned in [`uv.lock`](uv.lock), which records the exact
 resolved version of every direct and transitive dependency.
 
-As of the current lock, the 36 packages reachable on macOS and Windows are all
-permissively licensed — no copyleft of any kind. The remaining 17 are the
-NVIDIA CUDA runtime, pulled in transitively by `torch` behind
-`sys_platform == 'linux'`; they are proprietary, are not installed on other
-platforms, and are not fetched by the CPU-only reproduction path documented
-above. This repository vendors no third-party code.
+As of the current lock all 31 third-party packages are permissively licensed
+(MIT, BSD, Apache-2.0, PSF), on every platform. `torch` is pinned to the PyTorch
+CPU index — see `[tool.uv.sources]` in `pyproject.toml` — which keeps the NVIDIA
+CUDA runtime out of the tree entirely; the default build would pull in 19
+proprietary packages under the CUDA Toolkit EULA, none of which reproducing the
+paper ever uses. The trade is that GPU retraining is not available against this
+lock; install `torch` from the default index if you need it. This repository
+vendors no third-party code.
 
 ## License
 

@@ -14,9 +14,26 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-    "pytest-cov>=4.1",
-    "ruff>=0.4",
 ]
+
+# CPU-only torch. The default resolution pulls the CUDA runtime on Linux -- 19
+# packages under the NVIDIA CUDA Toolkit EULA, the only proprietary licenses in
+# the tree. Reproducing the paper never touches them: the figure and table
+# generators load the trained MPS-V checkpoints from the data archive rather
+# than retraining, and no Makefile target runs scripts/mps_v/train.py. Pinning
+# the CPU index removes them from the lock, leaving a wholly permissive
+# dependency tree.
+#
+# Cost: retraining the velocity potential (scripts/mps_v/train.py, which selects
+# CUDA when available) is CPU-only against this lock. Install torch from the
+# default index if you need GPU training.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [build-system]
 requires = ["uv_build>=0.10.7,<0.11.0"]
