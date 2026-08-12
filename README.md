@@ -170,7 +170,8 @@ uv run python scripts/make_fig_gmm_ode.py              # needs no archive data
 
 ## License & dependencies
 
-**tnwf is MIT** — see [`LICENSE`](LICENSE).
+`tnwf` is released under the MIT License; the full text is in
+[`LICENSE`](LICENSE).
 
 Dependencies are pinned in [`uv.lock`](uv.lock). The license of every one of the
 30 third-party packages is reproduced in full under [`licenses/`](licenses/),
