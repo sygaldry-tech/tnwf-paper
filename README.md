@@ -76,10 +76,8 @@ Jupyter is pulled in on demand, so it stays out of the locked dependencies.
 ## Reproducing the paper figures
 
 Each generator writes to a relative `figures/` path (override with `--out`). The
-manuscript has 8 figures + 2 tables and the supplement 5 + 2; the tables below
-are exhaustive, so what is and is not released is unambiguous.
-
-### Main text
+table covers all ten main-text floats, so what is and is not released is
+unambiguous.
 
 | Float | Asset | Generator | Status |
 |---|---|---|---|
@@ -94,22 +92,13 @@ are exhaustive, so what is and is not released is unambiguous.
 | Table 2 | `table_scaling.tex` | `make_table2_scaling.py` | ✅ needs `timing_scaling` + MPS-V checkpoints |
 | Fig 8 | `fig_rare_event_advantage.pdf` | `make_fig_rare_event.py` | ✅ needs MPS-V checkpoints |
 
-### Supplement
+**Fig 2–6, Fig 8 and Tables 1–2 reproduce exactly** — byte- or content-identical
+to the manuscript. Fig 1 is built by LaTeX. Fig 7 is the only main-text float not
+released; it comes from a cloud (Modal) timing driver.
 
-| Float | Asset | Generator | Status |
-|---|---|---|---|
-| Table S1 | — | — | hand-written tabular in the LaTeX source |
-| Fig S1 | `figS1_supp_pareto.pdf` | `make_fig_supp_pareto.py` | ✅ needs sweeps |
-| Table S2 | `table_core4_audit.tex` | *not released* | cloud (Modal) audit driver |
-| Fig S2 | `fig_panelA_sigma.pdf` | *not released* | intermediate run outputs not preserved |
-| Fig S3 | `fig_panelN_resolution.pdf` | *not released* | intermediate run outputs not preserved |
-| Fig S4 | `fig_panelD_ksigma.pdf` | *not released* | cloud (Modal) timing driver |
-| Fig S5 | `fig_analytic_vs_trained_std0.5_wt.pdf` | *not released* | intermediate run outputs not preserved |
-
-**Fig 2–6, Fig 8, Tables 1–2 and Fig S1 reproduce exactly** — byte- or
-content-identical to the manuscript. Fig 1 and Table S1 are built by LaTeX. The
-rest (Fig 7, Table S2, Fig S2–S5 — 6 assets) come from cloud drivers or from
-intermediate outputs that were not preserved.
+From the supplement, only **Fig S1** is reproducible here — `make supp`, and it
+needs the same sweeps as Fig 5. The remaining supplement floats depend on cloud
+drivers or on intermediate outputs that were not preserved.
 
 Fig 4 ships only the *plotting* half of the analytic scaling study: the
 `data/scaling_theory/` cache is in the archive below, but the compute pass that
