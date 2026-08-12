@@ -23,8 +23,13 @@ METHOD_LABEL = {
 METHOD_COLORS = {
     "jam":        "tab:gray",
     "dense":      "black",
-    "tci_tdvp1":  "tab:green",
-    "tci_tdvp2":  "tab:red",
+    # Fig. 8's validated categorical pair (C_Q/C_C in make_fig_rare_event.py):
+    # indigo + orange, chosen there after #3b0f70/#8c8c8c failed lightness and
+    # chroma checks. Reused here so every method-comparison figure in the paper
+    # shares one palette, and so npj's avoid-red-green rule stays satisfied.
+    # Keep in sync with make_fig_rare_event.py if that pair ever changes.
+    "tci_tdvp1":  "#4a3aa7",
+    "tci_tdvp2":  "#eb6834",
 }
 METHOD_MARKERS = {
     "jam":        "v",
