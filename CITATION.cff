@@ -41,6 +41,11 @@ authors:
     orcid: "https://orcid.org/0000-0002-1240-2192"
 repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
 license: MIT
+version: 1.0.0
+# TODO(author): add `date-released:` when the repository is made public. It is
+# deliberately absent until then -- 1.0.0 is not released while the repo is
+# private, and asserting a date now would be wrong by however long the preprint
+# takes to appear.
 # The hyperparameter-sweep data this code consumes is archived separately.
 identifiers:
   - type: doi
