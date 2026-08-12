@@ -72,9 +72,10 @@ run-gmm3:
 
 # ── figures ───────────────────────────────────────────────────────────────
 # Paper Fig 2 (dense evolution). Locally reproducible from the runners above,
-# but see the README: it needs the *original* data/swiss_roll_2d/jam/seed0.pt,
-# not a retrained one. Paper Fig 1 is a TikZ figure built in the LaTeX source
-# and has no generator here.
+# but it needs the *original* data/swiss_roll_2d/jam/seed0.pt from the data
+# archive, not a retrained one: JAM training is stochastic, so `make jam-swiss`
+# succeeds and then Fig 2 differs from the manuscript. Paper Fig 1 is a TikZ
+# figure built in the LaTeX source and has no generator here.
 fig2:
 	uv run python scripts/make_fig2_dense_evolution.py
 

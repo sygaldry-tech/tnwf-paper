@@ -163,33 +163,6 @@ make fig-rare-event                                    # needs MPS-V checkpoints
 uv run python scripts/make_fig_gmm_ode.py              # needs no archive data
 ```
 
-### Notes on the reproducible floats
-
-**Fig 2 needs the trained JAM checkpoint, not merely retraining.** `make
-jam-swiss` trains one, but training is stochastic, so a retrained `V_t` gives a
-slightly different figure — 517468 bytes retrained versus 517509 with the
-original. The originals are in the archive at
-`data/{swiss_roll_2d,gmm_2d,gmm_3d}/jam/`.
-
-**Fig 8 needs the MPS-V checkpoint.** Its wavefunction flow pipeline reads
-`examples/rare_event/rep*.npz` — the final MPS cores from the ten Table 2
-replicates (N=32, K=160, D_max=64), converted from the original pickles so this
-repository ships no `pickle` payloads. The flow ODE pipeline integrates `grad V`
-of the *same* learned potential, which lives in `data/mps_v_checkpoints/`. Using
-one potential for both pipelines is what makes the comparison fair: the learning
-error is then common to the two, so the figure contrasts the transports and
-sampling methods rather than two different velocity fields. `make
-fig-rare-event` fails with a pointer to the archive if the checkpoint is absent.
-It writes the manuscript's filename directly and defaults to the paper's
-`--tail-k 4.0`, so a bare run reproduces the figure; ~1 min at 40,000 samples
-per pipeline.
-
-**Fig 5 palette.** The color stops in `make_fig_tsne_grid.py` are pinned as
-explicit magma triples (LUT indices 38 / 128 / 199) rather than
-`plt.cm.magma(f)` calls. magma is a 256-entry lookup table, so `magma(f)` is
-piecewise constant in `f` and an approximate `f` lands on a neighboring stop.
-Leave them pinned.
-
 ## Layout
 
 ```
