@@ -76,6 +76,24 @@ def repo_tracked_under_data() -> set[str]:
     return {p[len("data/"):] for p in out if p.startswith("data/")}
 
 
+#: Filesystem and editor debris that must never reach a public archive. The
+#: staging tree lives on a Mac, so simply browsing it in Finder -- or running
+#: `ls` in some shells -- creates .DS_Store files inside it. Nothing filtered
+#: them before, so a rebuild would have shipped them to Zenodo; the only reason
+#: the published archive is clean is that it predates the ones now on disk.
+CRUFT = {".DS_Store", "Thumbs.db", "desktop.ini", ".directory"}
+CRUFT_PREFIXES = ("._",)          # macOS AppleDouble resource forks
+CRUFT_SUFFIXES = (".swp", ".swo", "~", ".orig", ".rej")
+
+
+def is_cruft(rel: str) -> bool:
+    name = Path(rel).name
+    return (name in CRUFT
+            or name.startswith(CRUFT_PREFIXES)
+            or name.endswith(CRUFT_SUFFIXES)
+            or "__MACOSX" in Path(rel).parts)
+
+
 def collect(src: Path, exclude: set[str]) -> list[tuple[Path, str]]:
     files = []
     for p in sorted(src.rglob("*")):
@@ -85,6 +103,8 @@ def collect(src: Path, exclude: set[str]) -> list[tuple[Path, str]]:
         if rel == "MANIFEST.tsv" or rel in exclude:
             continue
         if EXCLUDE_METHODS.intersection(Path(rel).parts):
+            continue
+        if is_cruft(rel):
             continue
         files.append((p, rel))
     return files
