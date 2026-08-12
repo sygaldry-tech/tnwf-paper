@@ -10,7 +10,7 @@ type: software
 # Author order and affiliations mirror sn-article.tex. Cochran and Veerapaneni
 # are jointly affiliated; CFF takes one affiliation per author, so each carries
 # the one listed first in the manuscript.
-# TODO(author): ORCIDs still needed for Chad Rigetti and Shravan Veerapaneni
+# TODO(author): an ORCID is still needed for Chad Rigetti
 # (`orcid: "https://orcid.org/0000-..."`, in both author blocks).
 authors:
   - given-names: "Nathan X."
@@ -32,6 +32,7 @@ authors:
   - given-names: Shravan
     family-names: Veerapaneni
     affiliation: "University of Michigan, Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-2294-7233"
   - given-names: "Michael J."
     family-names: Keiser
     affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
@@ -66,6 +67,7 @@ preferred-citation:
     - given-names: Shravan
       family-names: Veerapaneni
       affiliation: "University of Michigan, Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-2294-7233"
     - given-names: "Michael J."
       family-names: Keiser
       affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
