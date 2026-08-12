@@ -3,7 +3,7 @@
 Reproduction code for the preprint of the same name.
 
 > 📄 Preprint: _link to appear (arXiv)_
-> 🔖 To cite, see [`CITATION.cff`](CITATION.cff).
+> 🔖 To cite, see [Paper citation](#paper-citation).
 
 ![Dense wavefunction evolution on the Swiss roll target](assets/fig2_dense.png)
 
@@ -178,6 +178,31 @@ tnwf/
 Everything under `scripts/` either generates a manuscript float or produces the
 sweep data one consumes. `figures/`, `results/` and the bulk of `data/` are
 generated or downloaded, and are not version-controlled.
+
+## Paper citation
+
+The preprint is on arXiv: _link to appear_. To cite the paper, use the BibTeX
+below. [`CITATION.cff`](CITATION.cff) carries the same details in machine-readable
+form, which is what GitHub's **Cite this repository** button reads.
+
+```bibtex
+@misc{kodama2026scalable,
+  author        = {Kodama, Nathan X. and Wray, L. Andrew and Cochran, Sam and
+                   Rigetti, Chad and Veerapaneni, Shravan and Keiser, Michael J.},
+  title         = {Scalable quantum simulation of continuous-time generative
+                   models via tensor networks},
+  year          = {2026},
+  eprint        = {XXXX.XXXXX},
+  archivePrefix = {arXiv},
+  primaryClass  = {quant-ph},
+  doi           = {10.48550/arXiv.XXXX.XXXXX},
+  url           = {https://arxiv.org/abs/XXXX.XXXXX}
+}
+```
+
+To cite the data archive on its own — for instance if you use the sweeps without
+the paper — use its own DOI,
+[10.5281/zenodo.21845216](https://doi.org/10.5281/zenodo.21845216).
 
 ## Dependencies & licenses
 
