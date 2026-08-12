@@ -179,6 +179,23 @@ Everything under `scripts/` either generates a manuscript float or produces the
 sweep data one consumes. `figures/`, `results/` and the bulk of `data/` are
 generated or downloaded, and are not version-controlled.
 
+## License & dependencies
+
+**tnwf is MIT** — see [`LICENSE`](LICENSE).
+
+Dependencies are pinned in [`uv.lock`](uv.lock). The license of every one of the
+30 third-party packages is reproduced in full under [`licenses/`](licenses/),
+indexed by
+[`licenses/THIRD_PARTY_NOTICES.md`](licenses/THIRD_PARTY_NOTICES.md).
+
+Every package's own code is permissively licensed (MIT, BSD, Apache-2.0, PSF).
+Two components are not, and are disclosed in the notices: `scipy`'s wheel ships
+`libgfortran` and `libgcc_s` (GPL-3.0-or-later **with** the GCC Runtime Library
+Exception, which exists to permit linking into non-GPL software) and
+`libquadmath` (LGPL-2.1-or-later, satisfied by dynamic linking against an
+unmodified library plus notice). This repository vendors no third-party source
+code; `licenses/` holds license texts only.
+
 ## Paper citation
 
 The preprint is on arXiv: _link to appear_. To cite the paper, use the BibTeX
@@ -203,23 +220,3 @@ form, which is what GitHub's **Cite this repository** button reads.
 To cite the data archive on its own — for instance if you use the sweeps without
 the paper — use its own DOI,
 [10.5281/zenodo.21845216](https://doi.org/10.5281/zenodo.21845216).
-
-## Dependencies & licenses
-
-Dependencies are pinned in [`uv.lock`](uv.lock). The license of every one of the
-30 third-party packages is reproduced in full under [`licenses/`](licenses/),
-indexed by
-[`licenses/THIRD_PARTY_NOTICES.md`](licenses/THIRD_PARTY_NOTICES.md).
-
-Every package's own code is permissively licensed (MIT, BSD, Apache-2.0, PSF).
-Two components are not, and are disclosed in the notices: `scipy`'s wheel ships
-`libgfortran` and `libgcc_s` (GPL-3.0-or-later **with** the GCC Runtime Library
-Exception, which exists to permit linking into non-GPL software) and
-`libquadmath` (LGPL-2.1-or-later, satisfied by dynamic linking against an
-unmodified library plus notice). This repository vendors no third-party source
-code; `licenses/` holds license texts only.
-
-## License
-
-MIT — see [`LICENSE`](LICENSE). Third-party terms are in
-[`licenses/`](licenses/).
