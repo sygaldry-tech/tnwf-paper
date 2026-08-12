@@ -236,7 +236,7 @@ version-controlled — see the archive section above.
 ## Dependencies & licenses
 
 Dependencies are pinned in [`uv.lock`](uv.lock), which records the exact
-resolved version of every direct and transitive dependency. The licence of
+resolved version of every direct and transitive dependency. The license of
 every one of the 30 third-party packages is reproduced in full under
 [`licenses/`](licenses/), indexed by
 [`licenses/THIRD_PARTY_NOTICES.md`](licenses/THIRD_PARTY_NOTICES.md).
@@ -246,7 +246,7 @@ table from the archived data. `torch` is pinned to the PyTorch CPU index — see
 `[tool.uv.sources]` in `pyproject.toml` — so a default install pulls no NVIDIA
 package at all. Installing `torch` from the default index instead, which is what
 GPU retraining requires, resolves roughly 19 further packages under the NVIDIA
-CUDA Toolkit EULA and NVIDIA Software Licence Agreement; those are proprietary
+CUDA Toolkit EULA and NVIDIA Software License Agreement; those are proprietary
 terms between you and NVIDIA, and nothing here licenses them to you.
 
 Every package's own code is permissively licensed (MIT, BSD, Apache-2.0, PSF).
@@ -255,7 +255,7 @@ Two components are not, and are disclosed in the notices: `scipy`'s wheel ships
 Exception, which exists to permit linking into non-GPL software) and
 `libquadmath` (LGPL-2.1-or-later, satisfied by dynamic linking against an
 unmodified library plus notice). This repository vendors no third-party source
-code; `licenses/` holds licence texts only.
+code; `licenses/` holds license texts only.
 
 ## License
 

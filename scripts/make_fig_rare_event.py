@@ -124,7 +124,7 @@ TAIL_FIT_CUT = 0.20    # fit the amplification power law on p <= this (see below
 BUDGET = 500           # state preparations, for the panel (b,c) harvest
 
 # Validated categorical pair; the paper's older #3b0f70/#8c8c8c fails the
-# lightness and chroma checks (the grey reads as absence of a series, not as one).
+# lightness and chroma checks (the gray reads as absence of a series, not as one).
 C_Q, C_C = "#4a3aa7", "#eb6834"
 
 

@@ -1,8 +1,8 @@
 # Third-Party Notices
 
 This software depends on the packages listed below. Each is reproduced
-in full in this directory, verbatim and unmodified, as their licences
-require. Nothing here is a link standing in for a licence text.
+in full in this directory, verbatim and unmodified, as their licenses
+require. Nothing here is a link standing in for a license text.
 
 tnwf itself is MIT — see [`../LICENSE`](../LICENSE). This repository
 contains no third-party source code; these are the terms of the
@@ -18,9 +18,9 @@ figures and tables all regenerate on CPU.
 Installing `torch` from the default index instead — which
 `pyproject.toml` describes for anyone wanting GPU training — resolves
 roughly 19 additional packages (`nvidia-*`, `cuda-*`, `triton`) under the
-NVIDIA CUDA Toolkit EULA and NVIDIA Software Licence Agreement. Those are
+NVIDIA CUDA Toolkit EULA and NVIDIA Software License Agreement. Those are
 proprietary terms between you and NVIDIA. This release neither
-redistributes those packages nor grants any licence to them, and no
+redistributes those packages nor grants any license to them, and no
 notice here covers them.
 
 ## Dynamically linked components carrying copyleft
@@ -28,7 +28,7 @@ notice here covers them.
 `scipy` ships three shared libraries inside its wheel, used by dynamic
 linking and unmodified:
 
-| Library | Licence |
+| Library | License |
 |---|---|
 | `libgfortran.5.dylib` | GPL-3.0-or-later WITH GCC-exception-3.1 |
 | `libgcc_s.1.1.dylib` | GPL-3.0-or-later WITH GCC-exception-3.1 |
@@ -43,30 +43,30 @@ Full texts: the GPLv3 and the GCC Runtime Library Exception are inside
 [`scipy-LICENSE.txt`](scipy-LICENSE.txt); the LGPL-2.1 body is in
 [`LGPL-2.1.txt`](LGPL-2.1.txt).
 
-**numpy is deliberately not listed here.** Its licence file declares the
+**numpy is deliberately not listed here.** Its license file declares the
 same components, but the installed wheel bundles no shared libraries at
 all — it links Apple Accelerate. Repeating the declaration would claim we
-redistribute binaries we do not. numpy's licence is still reproduced
+redistribute binaries we do not. numpy's license is still reproduced
 verbatim, including those stale declarations, because editing a copyright
 holder's notice is worse than reproducing it as written.
 
 ## Scope and platform
 
-Licence text can only be read from installed wheels, so these notices
+License text can only be read from installed wheels, so these notices
 describe the platform they were generated on (macOS, arm64). A Linux
 install resolves different wheels and may bundle different components —
 numpy there typically bundles OpenBLAS and libgfortran, which it does not
 here. The dependency *audit* accompanying this release is lock-driven
-precisely to avoid that blind spot, but no lock file records licence
+precisely to avoid that blind spot, but no lock file records license
 text. Regenerate on a platform if you need its exact set.
 
-Each package's own primary licence is reproduced. Licences for components
+Each package's own primary license is reproduced. Licenses for components
 bundled *inside* a dependency are reproduced only where that dependency
 actually ships the component here — in practice scipy.
 
 ## Packages
 
-| Package | Version | Licence | Copyright | Text |
+| Package | Version | License | Copyright | Text |
 |---|---|---|---|---|
 | colorama | 0.4.6 | BSD-3-Clause | Copyright (c) 2010 Jonathan Hartley | [`colorama-LICENSE.txt`](colorama-LICENSE.txt) |
 | contourpy | 1.3.3 | BSD-3-Clause | Copyright (c) 2021-2025, ContourPy Developers. | [`contourpy-LICENSE`](contourpy-LICENSE) |
@@ -79,7 +79,7 @@ actually ships the component here — in practice scipy.
 | joblib | 1.5.3 | BSD-3-Clause | Copyright (c) 2008-2021, The joblib developers. | [`joblib-LICENSE.txt`](joblib-LICENSE.txt) |
 | kiwisolver | 1.5.0 | BSD-3-Clause | Copyright (c) 2013-2026, Nucleic Development Team | [`kiwisolver-LICENSE`](kiwisolver-LICENSE) |
 | markupsafe | 3.0.3 | BSD-3-Clause | Copyright 2010 Pallets | [`markupsafe-LICENSE.txt`](markupsafe-LICENSE.txt) |
-| matplotlib | 3.10.9 | PSF-2.0 (matplotlib licence, PSF-derived) | Copyright (c) 1997, 2009, American Mathematical Society (http://www.ams.org).; Copyright (C) 1994, 1995, Basil K. Malyshev. All Rights Reserved.; Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State University.; Copyright (c) 2009 Pierre Raybaut | [`matplotlib-LICENSE`](matplotlib-LICENSE) |
+| matplotlib | 3.10.9 | PSF-2.0 (matplotlib license, PSF-derived) | Copyright (c) 1997, 2009, American Mathematical Society (http://www.ams.org).; Copyright (C) 1994, 1995, Basil K. Malyshev. All Rights Reserved.; Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State University.; Copyright (c) 2009 Pierre Raybaut | [`matplotlib-LICENSE`](matplotlib-LICENSE) |
 | mpmath | 1.3.0 | BSD-3-Clause | Copyright (c) 2005-2021 Fredrik Johansson and mpmath contributors | [`mpmath-LICENSE`](mpmath-LICENSE) |
 | networkx | 3.6.1 | BSD-3-Clause | Copyright (c) 2004-2025, NetworkX Developers | [`networkx-LICENSE.txt`](networkx-LICENSE.txt) |
 | numpy | 2.4.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | Copyright (c) 2005-2025, NumPy Developers.; Copyright (c) 2011-2014, The OpenBLAS Project; Copyright (c) 1992-2013 The University of Tennessee and The University; Copyright (c) 2000-2013 The University of California Berkeley. All | [`numpy-LICENSE.txt`](numpy-LICENSE.txt) |
@@ -101,13 +101,13 @@ actually ships the component here — in practice scipy.
 
 30 packages — every third-party entry in `uv.lock`.
 
-## Supporting licence texts
+## Supporting license texts
 
 Terms of components bundled inside a dependency rather than
 dependencies themselves, so they are not counted above.
 
 - [`LGPL-2.1.txt`](LGPL-2.1.txt) — LGPL-2.1, for scipy's libquadmath
 
-Generated by `gen_notices.py` in the project's licence-audit
+Generated by `gen_notices.py` in the project's license-audit
 directory. Regenerate with `make notices` there rather than editing
 this file by hand.

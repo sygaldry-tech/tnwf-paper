@@ -6,7 +6,7 @@ Retrieved: 2026-08-12
 SHA-256:   20e50fe7aae3e56378ebf0417d9de904f55a0e61e4df315333e632a4d3555d95
 
 scipy ships libquadmath.0.dylib under LGPL-2.1-or-later, but its
-notice gives a URL rather than the licence body. Reproduced here so
+notice gives a URL rather than the license body. Reproduced here so
 the full terms travel with the code.
 ==============================================================================
 

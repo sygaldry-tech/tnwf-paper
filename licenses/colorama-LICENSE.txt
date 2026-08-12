@@ -6,7 +6,7 @@ Retrieved: 2026-08-12
 SHA-256:   cac35c02686e5d04a5a7140bfb3b36e73aed496656e891102e428886d7930318
 
 colorama is locked under sys_platform == 'win32' and is never
-installed on macOS, so its licence cannot be read from this
+installed on macOS, so its license cannot be read from this
 environment. Taken from the pinned wheel.
 ==============================================================================
 
