@@ -119,9 +119,8 @@ from that cache; its numbers are not re-derived.
 ## Getting the data archive
 
 Floats marked "needs …" read from `data/`, which is **not in this repository** —
-41 MB unpacked, almost all hyperparameter sweeps. It is deposited with
-**restricted** access: the DOI and its metadata are public and citable, but the
-files are released on request to the corresponding author.
+41 MB unpacked, almost all hyperparameter sweeps. It is deposited openly under
+CC-BY-4.0 and downloadable without request.
 
 DOI: [10.5281/zenodo.21845216](https://doi.org/10.5281/zenodo.21845216)
 
