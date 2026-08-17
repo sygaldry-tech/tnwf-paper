@@ -36,6 +36,34 @@ from _hp_utils import (
 
 SCALING_METHODS = ["dense", "tci_tdvp1", "tci_tdvp2"]
 
+# ── Font sizes, quoted at the size they RENDER in the paper ──────────────
+# This figure is 18.5 in wide and sn-article.tex includes it at
+# 0.98\textwidth, i.e. about 6.2 in, so the PDF is scaled down by ~0.335 and
+# every font shrinks with it. Sizes are therefore written below as the point
+# size they should end up at on the printed page, and _pt() converts to the
+# matplotlib value. The converted numbers look far too large in isolation --
+# a 9 pt axis label becomes fontsize 27 -- which is exactly why the original
+# hand-picked values were wrong: fontsize=14 rendered at 4.7 pt and
+# fontsize=10 at 3.3 pt, against a caption set in roughly 9 pt. Chad's review
+# on 17 August 2026 flagged the result as unreadable.
+#
+# Keep _FIG_W_IN in step with the figsize below, and _RENDERED_W_IN with the
+# includegraphics width in sn-article.tex; if either moves, every font moves.
+_FIG_W_IN = 18.5
+_RENDERED_W_IN = 6.2
+
+
+def _pt(rendered: float) -> float:
+    """The matplotlib fontsize that renders at `rendered` points in the paper."""
+    return round(rendered * _FIG_W_IN / _RENDERED_W_IN, 1)
+
+
+FS_LABEL = _pt(9.0)     # axis labels, at parity with the caption
+FS_TICK = _pt(8.0)      # tick labels; previously the rcParams default
+FS_ANNOT = _pt(8.0)     # in-axes annotations ("Dense feasible")
+FS_PANEL = _pt(11.0)    # (a)/(b)/(c) panel letters, deliberately above labels
+FS_LEGEND = _pt(9.0)
+
 DATASETS = [
     (2, "data/gmm_2d_hp"),
     (3, "data/gmm_3d_hp_v2"),
@@ -151,18 +179,19 @@ def main():
         ax.axhline(1.0, color="dimgray", lw=1, ls="--", alpha=0.7, zorder=0)
         ax.set_xticks(list(ds_all))
         ax.set_xticklabels([str(int(d)) for d in ds_all])
-        ax.set_xlabel("d  (spatial dimension)", fontsize=14)
-        ax.set_ylabel(ylabel, fontsize=14)
+        ax.set_xlabel("d  (spatial dimension)", fontsize=FS_LABEL)
+        ax.tick_params(labelsize=FS_TICK)
+        ax.set_ylabel(ylabel, fontsize=FS_LABEL)
         ax.set_yscale("log")
         ax.grid(True, which="both", alpha=0.25)
         ax.axvspan(min(ds_all) - 0.3, dense_max_d + 0.3, color="gray",
                    alpha=0.08, zorder=0)
         ax.text((min(ds_all) + dense_max_d) / 2, 0.02, "Dense feasible",
                 transform=ax.get_xaxis_transform(), va="bottom", ha="center",
-                fontsize=10, color="dimgray")
+                fontsize=FS_ANNOT, color="dimgray")
         ax.text(0.02, 1.02, f"({panel_letter.lower()})",
                 transform=ax.transAxes, ha="left", va="bottom",
-                fontsize=18, fontweight="bold")
+                fontsize=FS_PANEL, fontweight="bold")
 
     # ── Accuracy panel (C): best-cell SW vs d (measured d only) ─────────
     sw_vals = []
@@ -186,21 +215,22 @@ def main():
                    alpha=0.08, zorder=0)
     ax_acc.text((min(ds_all) + dense_max_d) / 2, 0.02, "Dense feasible",
                 transform=ax_acc.get_xaxis_transform(), va="bottom",
-                ha="center", fontsize=10, color="dimgray")
+                ha="center", fontsize=FS_ANNOT, color="dimgray")
     ymax = max(sw_vals) if sw_vals else 0.15
     ax_acc.set_ylim(0, ymax * 1.35)
     ax_acc.set_xticks(list(ds_all))
     ax_acc.set_xticklabels([str(int(d)) for d in ds_all])
-    ax_acc.set_xlabel("d  (spatial dimension)", fontsize=14)
-    ax_acc.set_ylabel("Best-cell accuracy (SW)", fontsize=14)
+    ax_acc.set_xlabel("d  (spatial dimension)", fontsize=FS_LABEL)
+    ax_acc.tick_params(labelsize=FS_TICK)
+    ax_acc.set_ylabel("Best-cell accuracy (SW)", fontsize=FS_LABEL)
     ax_acc.grid(True, which="both", alpha=0.25)
     ax_acc.text(0.02, 1.02, "(c)", transform=ax_acc.transAxes,
-                ha="left", va="bottom", fontsize=18, fontweight="bold")
+                ha="left", va="bottom", fontsize=FS_PANEL, fontweight="bold")
 
     handles, labels = ax_mem_s.get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center",
                bbox_to_anchor=(0.5, 1.0),
-               ncol=len(labels), fontsize=18, frameon=False,
+               ncol=len(labels), fontsize=FS_LEGEND, frameon=False,
                handlelength=1.2, columnspacing=2.0)
 
     out = Path(args.out)
