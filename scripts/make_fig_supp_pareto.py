@@ -24,6 +24,9 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Computer Modern for math, as in the other figure generators; this figure's
+# axis labels carry $d=...$ and SW and were rendering in DejaVu Sans.
+matplotlib.rcParams["mathtext.fontset"] = "cm"
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -94,7 +97,7 @@ def draw_pareto_panel(ax, d, results_dir, refs, xkind, *,
         xp, yp = pareto_min_min(xs[mask], ys[mask])
         ax.plot(xp, yp, "-", lw=2.0, color=METHOD_COLORS[method],
                 alpha=0.85, drawstyle="steps-post", zorder=3)
-    for name, val, ls in (("Dense best", refs["dense"], "--"),
+    for name, val, ls in (("Dense-grid best", refs["dense"], "--"),
                           ("JAM best",   refs["jam"],   ":")):
         if val == val:
             ax.axhline(val, color="dimgray", lw=1, ls=ls, alpha=0.7,
@@ -111,7 +114,7 @@ def draw_pareto_panel(ax, d, results_dir, refs, xkind, *,
         ax.set_ylabel("SW (final)", fontsize=14)
     ax.grid(True, which="both", alpha=0.25)
     if xkind == "mem":
-        ax.set_xlabel(f"MPS / Dense memory ratio  ($d={d}$)",
+        ax.set_xlabel(f"MPS / Dense-grid memory ratio  ($d={d}$)",
                       fontsize=14)
         title_kind = "Memory Pareto"
     else:

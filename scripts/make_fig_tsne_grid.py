@@ -19,6 +19,9 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Computer Modern for math, as in the other figure generators: the panel titles
+# ($d = 3$) and the SW chip are math and were rendering in DejaVu Sans.
+matplotlib.rcParams["mathtext.fontset"] = "cm"
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -161,7 +164,7 @@ def main():
         xlim = ax.get_xlim(); ylim = ax.get_ylim()
         ax.set_ylim(ylim[0] - 0.18 * (ylim[1] - ylim[0]), ylim[1])
         ax.text(0.5, 0.035,
-                f"TCI+1TDVP SW = {tdvp1['sw']:.3f}",
+                f"$\\mathrm{{SW}} = {tdvp1['sw']:.3f}$",
                 transform=ax.transAxes, va="bottom", ha="center",
                 fontsize=17, color="black",
                 bbox=dict(boxstyle="round,pad=0.30", fc="white",

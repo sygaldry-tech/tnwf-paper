@@ -16,7 +16,7 @@ TDVP_METHODS = ["tci_tdvp1", "tci_tdvp2"]
 
 METHOD_LABEL = {
     "jam":        "JAM",
-    "dense":      "Dense",
+    "dense":      "Dense-grid",
     "tci_tdvp1":  "TCI+1TDVP",
     "tci_tdvp2":  "TCI+2TDVP",
 }

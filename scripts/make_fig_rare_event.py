@@ -3,7 +3,7 @@
 Produces paper Fig. 8 as three square panels:
 
   (a) sampling cost -- state preparations per accepted rare sample against the
-      rare-event probability p, for gradient flow + rejection sampling against
+      rare-event probability p_rare, for gradient flow + rejection sampling against
       tensor-network transport + amplitude amplification. Both pipelines are built on
       the SAME learned potential and each is costed on the state its own pipeline
       produces, so this is a pipeline comparison.
@@ -77,6 +77,11 @@ from tnwf.pipelines.run_evolution import sample_from_mps  # noqa: E402
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
+# Computer Modern for math, as in every other figure generator. This was the last
+# figure on the default "dejavusans" fontset: p, 1/p, 1/sqrt(p), 4sigma and the
+# decade ticks all rendered sans, and the radical pulled in a STIXSizeOneSym
+# fallback, so one expression drew from three families.
+matplotlib.rcParams["mathtext.fontset"] = "cm"
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
@@ -97,6 +102,33 @@ def sample_wf_coords_from_mps(mps, n, N, d, L, rng):
 # Config
 # ============================================================================
 OUT_DIR = os.path.join(_PROJECT_ROOT, "figures")
+
+# ── Font sizes, quoted at the size they RENDER in the paper ──────────────
+# figsize is 19.5 in and sn-article.tex includes this at \textwidth (~6.3 in),
+# a downscale of ~0.32, so the hand-picked sizes landed far below the caption:
+# the panel letters at 25 rendered at 8.1 pt, axis labels at 21 at 6.8 pt, the
+# panel names at 19 at 6.1 pt, legends and the 4-sigma mark at 16-17 at ~5.4 pt,
+# and the tick labels were never set at all, so they inherited the rcParams
+# default of 10 and came out near 3.2 pt -- against a caption of roughly 9 pt.
+_FIG_W_IN = 19.5
+_RENDERED_W_IN = 6.3
+
+
+def _pt(rendered: float) -> float:
+    """The matplotlib fontsize that renders at `rendered` points in the paper."""
+    return round(rendered * _FIG_W_IN / _RENDERED_W_IN, 1)
+
+
+FS_LABEL = _pt(9.0)     # axis labels, at parity with the caption
+FS_TICK = _pt(8.0)      # tick labels
+FS_TITLE = _pt(8.0)     # panel titles, one step below the labels
+FS_ANNOT = _pt(8.0)     # the 4-sigma marker
+# Below the tick size: this legend carries four entries with long labels
+# ("amplitude amplification"), and at label parity its box covered the
+# rejection-sampling curve it was meant to explain.
+FS_LEGEND = _pt(6.5)
+FS_PANEL = _pt(9.0)     # (a)/(b)/(c) letters, bold at caption size
+
 PAPER_DIR = os.path.join(_PROJECT_ROOT, "examples/rare_event")  # Table-2 K=160 MPS cores
 CKPT_DIR = os.path.join(_PROJECT_ROOT, "data/mps_v_checkpoints")
 
@@ -119,6 +151,10 @@ SEED = 0
 THRESHOLDS = np.arange(2.5, 6.51, 0.25)   # k-sigma values swept in panel (a)
 TAIL_FIT_CUT = 0.20    # fit the amplification power law on p <= this (see below)
 BUDGET = 500           # state preparations, for the panel (b,c) harvest
+# Starting headroom above the highest cost in panel (a). _fit_legend_clearance
+# grows it until the four-entry legend measurably clears the data, so this is a
+# lower bound and a speed hint, not the final limit.
+LEGEND_HEADROOM = 2.0
 
 # Validated categorical pair; the paper's older #3b0f70/#8c8c8c fails the
 # lightness and chroma checks (the gray reads as absence of a series, not as one).
@@ -293,12 +329,41 @@ def _fit_prefactor(p, cost, exponent):
 # ============================================================================
 # Stage 5 -- the figure
 # ============================================================================
+def _legend_hits(fig, ax, leg, series):
+    """How many plotted points fall inside `leg`'s box, in display coords."""
+    fig.canvas.draw()
+    bb = leg.get_window_extent()
+    hits = 0
+    for x, y in series:
+        d = ax.transData.transform(np.column_stack([x, y]))
+        hits += int(np.sum((d[:, 0] >= bb.x0) & (d[:, 0] <= bb.x1)
+                           & (d[:, 1] >= bb.y0) & (d[:, 1] <= bb.y1)))
+    return hits
+
+
+def _fit_legend_clearance(fig, ax, leg, series, bottom, top):
+    """Raise `top` until the legend stops covering data; return the limit used.
+
+    constrained_layout sizes the legend at draw time, so the clearance needed
+    cannot be derived from font sizes -- and a hand-tuned multiplier silently
+    goes stale when the fonts, the entry count or the data range change. Growing
+    the limit until a measurement comes back clean keeps it honest. Each step
+    only re-draws; the sampling pipeline is not re-run.
+    """
+    for _ in range(24):
+        ax.set_ylim(bottom, top)
+        if _legend_hits(fig, ax, leg, series) == 0:
+            return top, True
+        top *= 1.15
+    return top, False
+
+
 def _axtag(ax, txt, inside=False):
     if inside:
-        ax.text(0.015, 0.975, txt, transform=ax.transAxes, fontsize=25,
+        ax.text(0.015, 0.975, txt, transform=ax.transAxes, fontsize=FS_PANEL,
                 fontweight="bold", va="top", ha="left")
     else:
-        ax.text(-0.02, 1.03, txt, transform=ax.transAxes, fontsize=25,
+        ax.text(-0.02, 1.03, txt, transform=ax.transAxes, fontsize=FS_PANEL,
                 fontweight="bold", va="bottom", ha="right")
 
 
@@ -322,7 +387,7 @@ def make_master_figure(sw_data, wf, cl, centers, out_dir, seed=0,
     ax_cost.axvline(p_at(tail_k), color="0.4", lw=1.5, ls=(0, (1, 2.2)), zorder=2)
     ax_cost.text(p_at(tail_k) * 1.15, 0.04, rf"${tail_k:g}\sigma$",
                  transform=ax_cost.get_xaxis_transform(),
-                 ha="left", va="bottom", fontsize=17, color="0.3")
+                 ha="left", va="bottom", fontsize=FS_ANNOT, color="0.3")
 
     # Rejection's 1/p is an identity holding at every p, so it is fitted and drawn
     # across all points. Amplification's 1/sqrt(p) is asymptotic and fails past
@@ -337,23 +402,37 @@ def make_master_figure(sw_data, wf, cl, centers, out_dir, seed=0,
           f"(asymptote {AMP_PREFACTOR:.3f})", flush=True)
 
     ax_cost.loglog(xc, c_cl / xc, "-", color=C_C, lw=2.4, zorder=2,
-                   label=r"$\propto 1/p$   (slope $-1$)")
+                   label=r"$\propto 1/p_{\mathrm{rare}}$   (slope $-1$)")
     ax_cost.loglog(xq, c_q / np.sqrt(xq), "-", color=C_Q, lw=2.4, zorder=2,
-                   label=r"$\propto 1/\sqrt{p}$   (slope $-1/2$)")
+                   label=r"$\propto 1/\sqrt{p_{\mathrm{rare}}}$   (slope $-1/2$)")
     ax_cost.loglog(a_cl, preps_cl, ls="none", marker="s", color=C_C, ms=9,
                    mfc="white", mew=2.0, zorder=3, label="rejection sampling")
     ax_cost.loglog(a_wf, preps_q, ls="none", marker="o", color=C_Q, ms=9,
                    zorder=4, label="amplitude amplification")
-    ax_cost.set_xlabel(r"rare-event probability  $p$", fontsize=21)
-    ax_cost.set_ylabel("state preparations / rare sample", fontsize=21)
-    ax_cost.tick_params(labelsize=16)
+    # Subscripted to match the manuscript: bare p is the probability density
+    # (Sec. 2.3) and the grid momentum (SI S1.2), so the rare-event mass is
+    # written p_rare everywhere it appears -- legend and axis label included.
+    ax_cost.set_xlabel("$p_{\\mathrm{rare}}$", fontsize=FS_LABEL)
+    ax_cost.set_title("Sampling Cost", fontsize=FS_TITLE, color="0.25", pad=10)
+    ax_cost.tick_params(labelsize=FS_TICK)
+    # Wrapped: at caption parity this is the longest string in the figure and,
+    # set on one line, it overran the axes at both ends and collided with the
+    # (a) panel letter. "per" rather than "/" also matches the caption.
+    ax_cost.set_ylabel("state preparations\nper rare sample", fontsize=FS_LABEL)
     ax_cost.grid(True, which="both", color="0.85", lw=0.7, alpha=0.8)
     ax_cost.set_axisbelow(True)
-    ax_cost.legend(fontsize=16, loc="upper right", framealpha=0.95, borderpad=0.5)
+    leg_cost = ax_cost.legend(fontsize=FS_LEGEND, loc="upper right",
+                              framealpha=0.95, borderpad=0.5)
     xs = np.concatenate([a_cl, a_wf])
     ys = np.concatenate([preps_cl, preps_q])
     ax_cost.set_xlim(xs.min() / 1.12, xs.max() * 1.12)
-    ax_cost.set_ylim(ys.min() / 1.12, ys.max() * 1.12)
+    # Both costs fall from upper-left to lower-right, so the legend's upper-right
+    # corner is the emptiest region -- but at four entries the box still reached
+    # far enough left to sit on top of the rejection markers. The y axis carries
+    # the headroom rather than the x axis: box_aspect is pinned square, so
+    # stretching ymax compresses the data downward and opens a clear band under
+    # the legend without changing the panel's shape or the fitted slopes.
+    ax_cost.set_ylim(ys.min() / 1.12, ys.max() * LEGEND_HEADROOM)
     ax_cost.set_box_aspect(1)
     _axtag(ax_cost, "(a)")
 
@@ -403,16 +482,16 @@ def make_master_figure(sw_data, wf, cl, centers, out_dir, seed=0,
         # the marker reads even where a bulk cluster shares the ring's hue.
         ax.scatter(e_pool[idx, 0], e_pool[idx, 1], s=58, facecolors="white",
                    edgecolors=ring, linewidths=1.8, zorder=4)
-        ax.set_xlabel(title, fontsize=19, labelpad=12)
+        ax.set_title(title, fontsize=FS_TITLE, color="0.25", pad=10)
         ax.set_xticks([])
         ax.set_yticks([])
 
     _panel(ax_rej, e_bulk_c, near_c, bulk_c, e_pool_c,
            rng.choice(len(pool_c), n_rej, replace=False),
-           "rejection sampling", C_C)
+           "Rejection Sampling", C_C)
     _panel(ax_amp, e_bulk_q, near_q, bulk_q, e_pool_q,
            rng.choice(len(pool_q), n_amp, replace=False),
-           "amplitude amplification", C_Q)
+           "Amplitude Amplification", C_Q)
     _axtag(ax_rej, "(b)")
     _axtag(ax_amp, "(c)")
     # Square window with equal data aspect: a t-SNE map is isotropic, so filling a
@@ -433,8 +512,22 @@ def make_master_figure(sw_data, wf, cl, centers, out_dir, seed=0,
                ms=10, label="rare sample (rejection)"),
         Line2D([0], [0], marker="o", ls="", mfc="white", mec=C_Q, mew=1.8,
                ms=10, label="rare sample (amplification)")],
-        loc="lower center", bbox_to_anchor=(0.5, -0.10), ncol=3, fontsize=17,
+        loc="lower center", bbox_to_anchor=(0.5, -0.10), ncol=3, fontsize=FS_LEGEND,
         framealpha=0.9)
+
+    # Regression guard for exactly the defect LEGEND_HEADROOM exists to prevent.
+    # constrained_layout sizes the legend only at draw time, so the clearance
+    # cannot be reasoned about from font sizes alone -- measure it. Counts both
+    # the measured markers and the fitted model lines; any hit means the
+    # headroom is too small and the legend is sitting on the data again.
+    _series = [(a_cl, preps_cl), (a_wf, preps_q),
+               (xc, c_cl / xc), (xq, c_q / np.sqrt(xq))]
+    _top, _clear = _fit_legend_clearance(
+        fig, ax_cost, leg_cost, _series, ys.min() / 1.12,
+        ys.max() * LEGEND_HEADROOM)
+    print(f"[legend] panel (a) ymax {_top:.1f} "
+          f"({_top / ys.max():.2f}x the highest cost); "
+          f"{'clear of the data' if _clear else 'STILL OVERLAPPING'}", flush=True)
 
     paths = []
     for ext in ("png", "pdf"):
@@ -457,9 +550,14 @@ def main():
     ap.add_argument("--n-samples", type=int, default=N_WF,
                     help="pooled Born samples per pipeline (default 40000)")
     ap.add_argument("--seed", type=int, default=SEED)
+    # Without this the figure could only be written into this repo's figures/,
+    # so every render left modified tracked files behind. Its six sibling
+    # generators all take an output path; this one now does too.
+    ap.add_argument("--out-dir", default=OUT_DIR,
+                    help="directory to write the figure into (default: repo figures/)")
     args = ap.parse_args()
 
-    os.makedirs(OUT_DIR, exist_ok=True)
+    os.makedirs(args.out_dir, exist_ok=True)
     t0 = time.perf_counter()
 
     wf, target, sw = load_wf_samples(args.source, args.seed, args.n_samples)
@@ -485,7 +583,7 @@ def main():
 
     print("\n=== cost per accepted rare sample ===", flush=True)
     s = sweep_thresholds(wf, cl, centers)
-    fitinfo = make_master_figure(s, wf, cl, centers, OUT_DIR, args.seed,
+    fitinfo = make_master_figure(s, wf, cl, centers, args.out_dir, args.seed,
                                  args.tail_k)
 
     i_k = int(np.argmin(np.abs(s["k"] - args.tail_k)))
@@ -499,7 +597,7 @@ def main():
             print(f"  lift at {kk:g} sigma: "
                   f"{s['preps_cl'][j] / s['preps_q'][j]:.2f}x")
 
-    npz_path = os.path.join(OUT_DIR, "rare_event_advantage.npz")
+    npz_path = os.path.join(args.out_dir, "rare_event_advantage.npz")
     np.savez(
         npz_path,
         tail_k=args.tail_k, sigma=SIGMA, scale=SCALE, d=D, L=L, source=args.source,

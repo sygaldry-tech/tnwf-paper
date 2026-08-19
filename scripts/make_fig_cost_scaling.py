@@ -22,6 +22,13 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Computer Modern for math. The default fontset, "dejavusans", draws \mathcal from a
+# cursive face (mathtext.cal) but everything else from DejaVu Sans italic
+# (mathtext.it = "sans:italic"), so R and S came out script while psi, chi and d came
+# out sans -- one expression, two families, and the psi looked nothing like LaTeX's.
+# "cm" is the face LaTeX itself uses, so the labels now match the manuscript's math.
+# Non-math text (titles, ticks, legend) stays sans-serif by design.
+matplotlib.rcParams["mathtext.fontset"] = "cm"
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -60,9 +67,31 @@ def _pt(rendered: float) -> float:
 
 FS_LABEL = _pt(9.0)     # axis labels, at parity with the caption
 FS_TICK = _pt(8.0)      # tick labels; previously the rcParams default
-FS_ANNOT = _pt(8.0)     # in-axes annotations ("Dense feasible")
-FS_PANEL = _pt(11.0)    # (a)/(b)/(c) panel letters, deliberately above labels
+FS_ANNOT = _pt(8.0)     # in-axes annotations ("Dense-grid feasible")
+FS_PANEL = _pt(9.0)     # (a)/(b)/(c) panel letters; bold at caption size, not above it
 FS_LEGEND = _pt(9.0)
+FS_TITLE = _pt(8.0)     # per-panel titles, matching fig_ksweep.py's FS_GLOSS
+
+# Panel-letter placement, in axes coordinates. Left of x=0 and above y=1 puts the
+# letter northwest of the plot area's top-left corner rather than inside it, which
+# is where it used to sit. Kept in step with the same constants in fig_ksweep.py so
+# the two figures place their letters identically.
+#
+# Y was 1.02, which sat the letter level with the topmost y tick label and, in panel
+# (a) where that label is the widest (10^7), the two collided. Raised to clear the
+# tick row entirely; the letter now sits alongside the panel title instead.
+PANEL_LABEL_X = -0.155
+PANEL_LABEL_Y = 1.12
+
+# Per-panel titles. Same role as PANEL_GLOSS in fig_ksweep.py: name the quantity in
+# words so the panel is readable without decoding the axis label first.
+# Titles name the quantity in words and stay free of notation; the y-axis carries the
+# bare symbol and the caption defines it. R and S were the available letters: A is the
+# action functional and F the discrete Fourier transform in tn-wf supplementary/si.tex,
+# so neither mnemonic (A for acceleration, F for factor) could be used.
+PANEL_TITLE = {"A": "Compression Ratio",
+               "B": "Acceleration Factor",
+               "C": "Accuracy"}
 
 DATASETS = [
     (2, "data/gmm_2d_hp"),
@@ -98,7 +127,12 @@ def main():
             best = min(cells, key=lambda c: c["sw"])
             mem = (1.0 if m == "dense"
                    else memory_fraction(best["N"], best["chi"], d))
-            table[(d, m)] = {**best, "mem": mem, "d": d}
+            # "mem" stays as the MPS/Dense fraction because make_fig_supp_pareto.py
+            # and the Pareto panels reason in that direction; "compression" is the
+            # reciprocal, which is what Figure 6(a) reports.
+            table[(d, m)] = {**best, "mem": mem, "d": d,
+                             "compression": (1.0 / mem if mem and mem == mem and mem > 0
+                                             else float("nan"))}
 
     # Time ratio: extrapolate Dense walltime if absent at high d.
     #
@@ -149,14 +183,24 @@ def main():
                                   if (t_d and t_d == t_d
                                       and cell[TIMER] == cell[TIMER])
                                   else float("nan"))
+            tr = cell["time_ratio"]
+            # Acceleration factor: Dense evolution walltime divided by the tensor
+            # network's, i.e. the reciprocal of time_ratio. Panel (b) reports it in
+            # this direction so it rises above unity as d grows, matching panel (a)'s
+            # compression factor; "time_ratio" itself stays MPS/Dense because the
+            # Pareto panels reason in that direction.
+            cell["acceleration"] = (1.0 / tr if tr == tr and tr > 0 else float("nan"))
 
     ds_all = sorted({d for d, _ in DATASETS})
     dense_ds = [d for d, _ in DATASETS if (d, "dense") in table]
     dense_max_d = max(dense_ds) if dense_ds else max(ds_all)
 
     for ax, key, ylabel, drop_d2, panel_letter in (
-        (ax_mem_s,  "mem",        "MPS / Dense memory",        True,  "A"),
-        (ax_wall_s, "time_ratio", "Evolution Walltime / Dense", False, "B"),
+        # The y-label is the bare symbol; the title above spells out what it means.
+        # Writing the words on both would name the axis twice, and panel (c) already
+        # carries a symbol -- SW(psi_data) -- so this also makes the three consistent.
+        (ax_mem_s,  "compression",  "$\\mathcal{R}$", True,  "A"),
+        (ax_wall_s, "acceleration", "$\\mathcal{S}$", False, "B"),
     ):
         is_memory_panel = (ax is ax_mem_s)
         for m in SCALING_METHODS:
@@ -179,17 +223,26 @@ def main():
         ax.axhline(1.0, color="dimgray", lw=1, ls="--", alpha=0.7, zorder=0)
         ax.set_xticks(list(ds_all))
         ax.set_xticklabels([str(int(d)) for d in ds_all])
-        ax.set_xlabel("d  (spatial dimension)", fontsize=FS_LABEL)
+        # Math, not plain text: the manuscript sets the spatial dimension as $d$
+        # (italic) throughout, and fig_ksweep.py already labels its axes in mathtext.
+        ax.set_xlabel("$d$", fontsize=FS_LABEL)
         ax.tick_params(labelsize=FS_TICK)
         ax.set_ylabel(ylabel, fontsize=FS_LABEL)
         ax.set_yscale("log")
         ax.grid(True, which="both", alpha=0.25)
         ax.axvspan(min(ds_all) - 0.3, dense_max_d + 0.3, color="gray",
                    alpha=0.08, zorder=0)
-        ax.text((min(ds_all) + dense_max_d) / 2, 0.02, "Dense feasible",
-                transform=ax.get_xaxis_transform(), va="bottom", ha="center",
+        # Top of the axes, not the bottom. Panels (a) and (b) now report factors
+        # greater than one, so the Dense series sits on the y=1 line at the very
+        # bottom -- exactly where this annotation used to go, and it was struck
+        # through by the markers. Panel (c) still plots absolute SW and keeps its
+        # label low, where there is room.
+        ax.text((min(ds_all) + dense_max_d) / 2, 0.98, "Dense-grid feasible",
+                transform=ax.get_xaxis_transform(), va="top", ha="center",
                 fontsize=FS_ANNOT, color="dimgray")
-        ax.text(0.02, 1.02, f"({panel_letter.lower()})",
+        ax.set_title(PANEL_TITLE[panel_letter], fontsize=FS_TITLE,
+                     color="0.25", pad=10)
+        ax.text(PANEL_LABEL_X, PANEL_LABEL_Y, f"({panel_letter.lower()})",
                 transform=ax.transAxes, ha="left", va="bottom",
                 fontsize=FS_PANEL, fontweight="bold")
 
@@ -213,18 +266,22 @@ def main():
     ax_acc.axhline(0.1, color="dimgray", lw=1.2, ls="--", alpha=0.8, zorder=1)
     ax_acc.axvspan(min(ds_all) - 0.3, dense_max_d + 0.3, color="gray",
                    alpha=0.08, zorder=0)
-    ax_acc.text((min(ds_all) + dense_max_d) / 2, 0.02, "Dense feasible",
-                transform=ax_acc.get_xaxis_transform(), va="bottom",
+    ax_acc.text((min(ds_all) + dense_max_d) / 2, 0.98, "Dense-grid feasible",
+                transform=ax_acc.get_xaxis_transform(), va="top",
                 ha="center", fontsize=FS_ANNOT, color="dimgray")
     ymax = max(sw_vals) if sw_vals else 0.15
     ax_acc.set_ylim(0, ymax * 1.35)
     ax_acc.set_xticks(list(ds_all))
     ax_acc.set_xticklabels([str(int(d)) for d in ds_all])
-    ax_acc.set_xlabel("d  (spatial dimension)", fontsize=FS_LABEL)
+    ax_acc.set_xlabel("$d$", fontsize=FS_LABEL)
     ax_acc.tick_params(labelsize=FS_TICK)
-    ax_acc.set_ylabel("Best-cell accuracy (SW)", fontsize=FS_LABEL)
+    # psi_T, not psi_data: the quantity is measured on the state the flow ends at,
+    # and psi_T is what the manuscript calls it (SW^wf_T in Table 2). Set as one math
+    # expression so SW is upright, matching \mathrm{SW} in the text.
+    ax_acc.set_ylabel("$\\mathrm{SW}(\\Psi_T)$", fontsize=FS_LABEL)
     ax_acc.grid(True, which="both", alpha=0.25)
-    ax_acc.text(0.02, 1.02, "(c)", transform=ax_acc.transAxes,
+    ax_acc.set_title(PANEL_TITLE["C"], fontsize=FS_TITLE, color="0.25", pad=10)
+    ax_acc.text(PANEL_LABEL_X, PANEL_LABEL_Y, "(c)", transform=ax_acc.transAxes,
                 ha="left", va="bottom", fontsize=FS_PANEL, fontweight="bold")
 
     handles, labels = ax_mem_s.get_legend_handles_labels()

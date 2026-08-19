@@ -30,6 +30,10 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Computer Modern for math, as in the other figure generators. The default
+# "dejavusans" fontset renders every symbol here -- N, K, d, varepsilon and the
+# exponents inside the legend entries -- in sans, against a serif caption.
+matplotlib.rcParams["mathtext.fontset"] = "cm"
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
@@ -68,7 +72,10 @@ def main() -> int:
     EGRID = r"$\varepsilon_{\mathrm{grid}}$"
     ETIME = r"$\varepsilon_{\mathrm{time}}$"
     rc = {"font.size": 17, "axes.labelsize": 23, "xtick.labelsize": 16,
-          "ytick.labelsize": 16, "legend.fontsize": 16}
+          "ytick.labelsize": 16, "legend.fontsize": 16,
+          # One step below axes.labelsize, as FS_TITLE/FS_GLOSS are in
+          # make_fig_cost_scaling.py and fig_ksweep.py.
+          "axes.titlesize": 20}
 
     with plt.rc_context(rc):
         fig, (axR, axK, axD) = plt.subplots(1, 3, figsize=(17.5, 5.2))
@@ -85,7 +92,8 @@ def main() -> int:
         axR.loglog(nn, yy, "o", color=C1, ms=9, mec="0.3", zorder=5, label="observed")
         axR.loglog(nnf, np.exp(icf) * nnf ** slf, "--", color=C1, lw=2.3,
                    label=f"fit $N^{{{slf:.2f}}}$")
-        axR.set(xlabel="grid resolution $N$", ylabel=EGRID)
+        axR.set(xlabel="$N$", ylabel=EGRID)
+        axR.set_title("Grid Resolution", color="0.25", pad=10)
         axR.legend(loc="lower left")
         axR.grid(alpha=0.3, which="both")
 
@@ -98,7 +106,8 @@ def main() -> int:
         axK.loglog(K, yA, "o", color=C0, ms=9, mec="0.3", zorder=5, label="observed")
         axK.loglog(kk, np.exp(ic) * kk ** sl, "--", color=C0, lw=2.3,
                    label=f"fit $K^{{{sl:.2f}}}$")
-        axK.set(xlabel="Trotter steps $K$", ylabel=ETIME)
+        axK.set(xlabel="$K$", ylabel=ETIME)
+        axK.set_title("Trotter Steps", color="0.25", pad=10)
         axK.legend(loc="lower left")
         axK.grid(alpha=0.3, which="both")
 
@@ -110,7 +119,8 @@ def main() -> int:
         axD.loglog(dv, yD, "o", color=C3, ms=10, mec="0.3", zorder=5, label="observed")
         axD.loglog(dd, yD[0] * (dd / dv[0]) ** 2.0, "-", color="0.25", lw=2.1,
                    label=r"upper bound $\propto d^{2}$")
-        axD.set(xlabel="dimensionality $d$", ylabel=ETIME)
+        axD.set(xlabel="$d$", ylabel=ETIME)
+        axD.set_title("Dimensionality", color="0.25", pad=10)
         axD.legend(loc="upper left")
         axD.grid(alpha=0.3, which="both")
         axD.set_xticks([2, 3, 4, 5])

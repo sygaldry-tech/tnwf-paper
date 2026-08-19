@@ -22,8 +22,15 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Computer Modern for math, as in make_fig_cost_scaling.py and fig_ksweep.py. The
+# default fontset, "dejavusans", draws psi and pi from DejaVu Sans italic, so this
+# figure's labels -- arg(psi), |psi|/max|psi|, the +-pi phase ticks and t -- came out
+# sans-serif and did not match the manuscript's math. Every label here is math, so the
+# whole figure moves; the panel row labels and colorbar titles are the visible part.
+matplotlib.rcParams["mathtext.fontset"] = "cm"
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+
 import numpy as np
 
 from tnwf.dense.evolution import (
@@ -36,6 +43,26 @@ from tnwf.grid import make_grid
 from tnwf.jam.train import DATASET_DEFAULTS
 from tnwf.pipelines.run_evolution import initial_psi_dense
 from tnwf.theory import make_analytic_V_fn
+
+# ── Font sizes, quoted at the size they RENDER in the paper ──────────────
+# Same scheme as make_fig_cost_scaling.py and accInf_WF's fig_ksweep.py. This
+# figure is 2.0*n_cols + 0.8 = 12.8 in wide at six columns and is included at
+# 0.95\textwidth (~6.0 in), so it is scaled by ~0.47 and every font shrinks with
+# it. The previous hand-picked sizes therefore landed far below the caption:
+# the colorbar labels at 10 rendered at 4.7 pt, their ticks at 9 at 4.2 pt, the
+# t = ... column titles at 11 at 5.2 pt and the row labels at 14 at 6.6 pt,
+# against a caption set in roughly 9 pt.
+#
+# _fs() takes the size a label should reach on the printed page and returns the
+# matplotlib value. It needs the figure width because that sets the downscale,
+# so it is called once n_cols is known.
+_RENDERED_W_IN = 6.0        # 0.95\textwidth in sn-article.tex
+
+
+def _fs(rendered: float, fig_w_in: float) -> float:
+    """The matplotlib fontsize that renders at `rendered` points in the paper."""
+    return round(rendered * fig_w_in / _RENDERED_W_IN, 1)
+
 
 
 def evolve_dense_with_snapshots(dataset: str, N: int, K: int,
@@ -169,7 +196,15 @@ def main():
 
     # ── Layout: 3 colorbars (top) + 2 data rows × 6 cols ────────────
     n_cols = len(snap_ts)
-    fig = plt.figure(figsize=(2.0 * n_cols + 0.8, 6.2), dpi=300,
+    fig_w_in = 2.0 * n_cols + 0.8
+    fs_label = _fs(9.0, fig_w_in)    # colorbar labels and row labels
+    fs_tick = _fs(8.0, fig_w_in)     # colorbar tick labels
+    # Column titles one step below the labels, matching FS_TITLE in
+    # make_fig_cost_scaling.py and FS_GLOSS in fig_ksweep.py: in both of those
+    # the per-panel title sits at 8 pt while axis labels sit at 9 pt. At 9 pt
+    # the t = ... row read as heavily as the quantities it was heading.
+    fs_title = _fs(8.0, fig_w_in)    # t = ... column titles
+    fig = plt.figure(figsize=(fig_w_in, 6.2), dpi=300,
                      constrained_layout=True)
     fig.set_constrained_layout_pads(w_pad=0.10, h_pad=0.30)
     outer_gs = fig.add_gridspec(2, 1, height_ratios=[0.13, 1.0], hspace=0.25)
@@ -186,15 +221,15 @@ def main():
     amp_cmap_obj   = amp_colormap()
     for cax, cmap_obj, vmin, vmax, label, ticks, tick_labels in (
         (cax_phase, phase_cmap_obj, -np.pi, np.pi,
-         r"phase $\arg(\psi)$  [rad]",
+         r"$\arg(\Psi_t)$",
          [-np.pi, -np.pi/2, 0, np.pi/2, np.pi],
-         [r"$-\pi$", r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$"]),
+         [r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"]),
         (cax_amp,   amp_cmap_obj,   0.0, 1.0,
-         r"$|\psi|\,/\,\max|\psi|$",
-         [0.0, 0.5, 1.0], ["0", "0.5", "1"]),
+         r"$|\Psi_t|\,/\,\max|\Psi_t|$",
+         [0.0, 0.5, 1.0], [r"$0$", r"$0.5$", r"$1$"]),
         (cax_pmf,   plt.get_cmap(pmf_cmap), 0.0, 1.0,
-         r"$|\psi|^{2}\,/\,\max|\psi|^{2}$",
-         [0.0, 0.5, 1.0], ["0", "0.5", "1"]),
+         r"$|\Psi_t|^{2}\,/\,\max|\Psi_t|^{2}$",
+         [0.0, 0.5, 1.0], [r"$0$", r"$0.5$", r"$1$"]),
     ):
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
         sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap_obj)
@@ -202,15 +237,17 @@ def main():
         # ticks, tick labels, and the colorbar label all above the bar
         cb.ax.xaxis.set_ticks_position("top")
         cb.ax.xaxis.set_label_position("top")
-        cb.set_label(label, fontsize=10)
+        cb.set_label(label, fontsize=fs_label)
         cb.set_ticks(ticks)
         cb.set_ticklabels(tick_labels)
-        cb.ax.tick_params(labelsize=9)
+        cb.ax.tick_params(labelsize=fs_tick)
 
     # ── Data rows: 2 rows × n_cols, math-only row labels ───────────
+    # psi_t, not psi: the manuscript subscripts the state by its time index
+    # (psi_t, psi_k, psi_T), and each column here is one t.
     row_specs = [
-        (sr_snaps,  "amp_phase", r"$\psi$"),
-        (sr_snaps,  "pmf",       r"$|\psi|^2$"),
+        (sr_snaps,  "amp_phase", r"$\Psi_t$"),
+        (sr_snaps,  "pmf",       r"$|\Psi_t|^2$"),
     ]
     axes = np.empty((len(row_specs), n_cols), dtype=object)
     for row_idx, (snaps, kind, kind_label) in enumerate(row_specs):
@@ -228,9 +265,9 @@ def main():
                           vmin=0.0, vmax=1.0)
             ax.set_xticks([]); ax.set_yticks([])
             if row_idx == 0:
-                ax.set_title(f"$t = {t:.2f}$", fontsize=11)
+                ax.set_title(f"$t = {t:.2f}$", fontsize=fs_title)
             if col_idx == 0:
-                ax.set_ylabel(kind_label, fontsize=14, rotation=0,
+                ax.set_ylabel(kind_label, fontsize=fs_label, rotation=0,
                               ha="right", va="center", labelpad=10)
 
     out = Path(args.out)
