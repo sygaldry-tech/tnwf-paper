@@ -111,7 +111,10 @@ def draw_pareto_panel(ax, d, results_dir, refs, xkind, *,
     ax.set_yscale("log")
     ax.set_xscale("log")
     if show_ylabel:
-        ax.set_ylabel("SW (final)", fontsize=14)
+        # Same quantity and same symbol as Figure 6's accuracy panel: the
+        # endpoint sliced Wasserstein. "SW (final)" said it in words while
+        # Figure 6 said it in math.
+        ax.set_ylabel("$\\mathrm{SW}(\\Psi_T)$", fontsize=14)
     ax.grid(True, which="both", alpha=0.25)
     if xkind == "mem":
         ax.set_xlabel(f"MPS / Dense-grid memory ratio  ($d={d}$)",

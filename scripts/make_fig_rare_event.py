@@ -84,6 +84,7 @@ matplotlib.use("Agg")
 matplotlib.rcParams["mathtext.fontset"] = "cm"
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
+from matplotlib.transforms import Bbox  # noqa: E402
 
 
 def sample_wf_coords_from_mps(mps, n, N, d, L, rng):
@@ -123,9 +124,13 @@ FS_LABEL = _pt(9.0)     # axis labels, at parity with the caption
 FS_TICK = _pt(8.0)      # tick labels
 FS_TITLE = _pt(8.0)     # panel titles, one step below the labels
 FS_ANNOT = _pt(8.0)     # the 4-sigma marker
-# Below the tick size: this legend carries four entries with long labels
-# ("amplitude amplification"), and at label parity its box covered the
-# rejection-sampling curve it was meant to explain.
+# The one element in the paper below the 8 pt caption floor, and it is a width
+# problem rather than a height one. Panel (a) is pinned square and is ~2.1 in wide
+# as rendered; "amplitude amplification" at 8.5 pt needs ~1.2 in, so a four-entry
+# legend spans the curve it explains no matter how much ymax headroom it is given
+# -- _fit_legend_clearance ran to 57x and still measured an overlap, in one column
+# and in two. Raising this needs the legend moved out of the axes (e.g. merged into
+# the figure-level row at the bottom), which is a layout change, not a font change.
 FS_LEGEND = _pt(6.5)
 FS_PANEL = _pt(9.0)     # (a)/(b)/(c) letters, bold at caption size
 
@@ -329,15 +334,67 @@ def _fit_prefactor(p, cost, exponent):
 # ============================================================================
 # Stage 5 -- the figure
 # ============================================================================
+# Margin the legend must keep from any plotted geometry, quoted in PRINTED
+# points. get_window_extent works in display pixels at fig.dpi, and this
+# figure is then downscaled ~0.32 into the page, so a margin written straight
+# into display units is worth about a seventh of its face value on paper --
+# 10 there bought 1.4 pt here, which still read as a collision.
+_LEGEND_MARGIN_PT = 4.0
+
+
+def _margin_px(fig):
+    """`_LEGEND_MARGIN_PT` printed points, expressed in display pixels."""
+    return _LEGEND_MARGIN_PT * (_FIG_W_IN / _RENDERED_W_IN) * fig.dpi / 72.0
+
+
+def _seg_hits_box(p0, p1, bb):
+    """Does the segment p0->p1 touch the rectangle bb? (Liang-Barsky clip.)"""
+    (x0, y0), (x1, y1) = p0, p1
+    dx, dy = x1 - x0, y1 - y0
+    t0, t1 = 0.0, 1.0
+    for p, q in ((-dx, x0 - bb.x0), (dx, bb.x1 - x0),
+                 (-dy, y0 - bb.y0), (dy, bb.y1 - y0)):
+        if p == 0:
+            if q < 0:
+                return False          # parallel and outside this slab
+            continue
+        r = q / p
+        if p < 0:
+            if r > t1:
+                return False
+            t0 = max(t0, r)
+        else:
+            if r < t0:
+                return False
+            t1 = min(t1, r)
+    return t0 <= t1
+
+
 def _legend_hits(fig, ax, leg, series):
-    """How many plotted points fall inside `leg`'s box, in display coords."""
+    """How much plotted geometry the legend covers, in display coords.
+
+    Counts SEGMENTS, not just vertices. The model curves are polylines through
+    the 17 swept thresholds, so testing vertices alone passed a legend whose
+    lower edge cut between two of them -- the curve visibly ran under the box
+    while the check reported it clear. Markers are counted as degenerate
+    segments by the same test.
+    """
     fig.canvas.draw()
-    bb = leg.get_window_extent()
+    # Expanded by a margin: "not intersecting" is too weak a test. At zero overlap
+    # the legend's lower-left corner still sat a couple of points off the top of
+    # the rejection curve, which at the printed panel width (~2 in) reads as a
+    # collision even though nothing technically crosses. Require visible daylight.
+    m = _margin_px(fig)
+    e = leg.get_window_extent()
+    bb = Bbox.from_extents(e.x0 - m, e.y0 - m, e.x1 + m, e.y1 + m)
     hits = 0
     for x, y in series:
         d = ax.transData.transform(np.column_stack([x, y]))
-        hits += int(np.sum((d[:, 0] >= bb.x0) & (d[:, 0] <= bb.x1)
-                           & (d[:, 1] >= bb.y0) & (d[:, 1] <= bb.y1)))
+        for i in range(len(d)):
+            if (bb.x0 <= d[i, 0] <= bb.x1) and (bb.y0 <= d[i, 1] <= bb.y1):
+                hits += 1
+            if i + 1 < len(d) and _seg_hits_box(d[i], d[i + 1], bb):
+                hits += 1
     return hits
 
 

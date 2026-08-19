@@ -166,7 +166,7 @@ def main():
         ax.text(0.5, 0.035,
                 f"$\\mathrm{{SW}} = {tdvp1['sw']:.3f}$",
                 transform=ax.transAxes, va="bottom", ha="center",
-                fontsize=17, color="black",
+                fontsize=21, color="black",   # 17 rendered at 6.8 pt; 21 -> ~8.4
                 bbox=dict(boxstyle="round,pad=0.30", fc="white",
                           ec="lightgray", alpha=0.95))
 
