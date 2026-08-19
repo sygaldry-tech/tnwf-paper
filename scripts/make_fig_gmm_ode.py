@@ -143,7 +143,7 @@ def main():
         axA.scatter(x_k[:, 0], x_k[:, 1], s=20, alpha=0.55,
                     color=palette[k], edgecolors="none",
                     label=f"t={t_show:.2f}", zorder=2 + k)
-    axA.set_title("Samples from Marginal ODE", fontsize=17)
+    axA.set_title("Probability Flow", fontsize=17)
     leg = axA.legend(loc="upper right", fontsize=15, framealpha=0.95,
                       handlelength=0.9, borderpad=0.45,
                       labelspacing=0.45)
@@ -160,7 +160,7 @@ def main():
                  zorder=2)
     axB.scatter(xs[-1, sel, 0], xs[-1, sel, 1], s=26, alpha=0.75,
                 color=palette[-1], edgecolors="none", zorder=3)
-    axB.set_title("Trajectories of Marginal ODE", fontsize=17)
+    axB.set_title("Sample Trajectories", fontsize=17)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

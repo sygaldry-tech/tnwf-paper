@@ -107,7 +107,7 @@ def main() -> int:
         axK.loglog(kk, np.exp(ic) * kk ** sl, "--", color=C0, lw=2.3,
                    label=f"fit $K^{{{sl:.2f}}}$")
         axK.set(xlabel="$K$", ylabel=ETIME)
-        axK.set_title("Trotter Steps", color="0.25", pad=10)
+        axK.set_title("Trotter Error", color="0.25", pad=10)
         axK.legend(loc="lower left")
         axK.grid(alpha=0.3, which="both")
 
