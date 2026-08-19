@@ -163,13 +163,15 @@ def main() -> int:
         axD.grid(alpha=0.3, which="both")
         axD.set_xticks([2, 3, 4, 5])
         axD.set_xticklabels(["2", "3", "4", "5"])
-        # 0.01 added and the floor dropped below the smallest point: the lowest
-        # datum (~0.011) used to sit under the lowest tick, leaving the bottom of
-        # the axis unlabelled.
+        # Default log ticks, as in panels (a) and (b). The explicit decimal ticks
+        # this replaces were two problems at once: they showed the SAME quantity as
+        # (b) in a different notation (0.01-0.06 against 10^-2/10^-3), and they
+        # stopped at 0.06 while the legend headroom carries the axis to ~0.23, so
+        # the top 60% of the axis had no labels and the rotated y label centred
+        # against a lopsided scale. They existed because the old range spanned less
+        # than a decade, where decade ticks give a single label; the headroom now
+        # spans two, so the default formatter has something to place.
         axD.set_ylim(bottom=yD.min() / 1.5)
-        axD.set_yticks([0.01, 0.02, 0.03, 0.04, 0.06])
-        axD.set_yticklabels(["0.01", "0.02", "0.03", "0.04", "0.06"])
-        axD.minorticks_off()
         # Grow the top limit until a measurement says the legend is clear. A fixed
         # multiplier is not trustworthy here: the legend is sized at draw time, and
         # 3.4x still left five points under the box.
