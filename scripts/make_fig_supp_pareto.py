@@ -2,7 +2,7 @@
 
 Full-page 2 rows x 3 cols:
   Row 1 (memory):   SW vs MPS/Dense memory ratio  at d = 3, 4, 5.
-  Row 2 (walltime): SW vs walltime per run (s)    at d = 3, 4, 5.
+  Row 2 (wall-clock): SW vs wall-clock time per run (s)  at d = 3, 4, 5.
 
 Each cell plots SW (log y) against the cost axis (log x). Points are
 hyperparameter cells; per-method Pareto staircases are overlaid;
@@ -118,8 +118,8 @@ def draw_pareto_panel(ax, d, results_dir, refs, xkind, *,
                       fontsize=14)
         title_kind = "Memory Pareto"
     else:
-        ax.set_xlabel(f"Walltime per run (s)  ($d={d}$)", fontsize=14)
-        title_kind = "Walltime Pareto"
+        ax.set_xlabel(f"Wall-clock time per run (s)  ($d={d}$)", fontsize=14)
+        title_kind = "Wall-Clock Pareto"
     ax.set_title(rf"{panel_letter}  {title_kind}  ($d={d}$)",
                  fontsize=15, fontweight="bold", loc="left")
 

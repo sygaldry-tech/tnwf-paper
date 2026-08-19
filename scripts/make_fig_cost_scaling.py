@@ -67,7 +67,7 @@ def _pt(rendered: float) -> float:
 
 FS_LABEL = _pt(9.0)     # axis labels, at parity with the caption
 FS_TICK = _pt(8.0)      # tick labels; previously the rcParams default
-FS_ANNOT = _pt(8.0)     # in-axes annotations ("Dense-grid feasible")
+FS_ANNOT = _pt(8.0)     # in-axes annotations ("Dense-Grid / Simulable")
 FS_PANEL = _pt(9.0)     # (a)/(b)/(c) panel letters; bold at caption size, not above it
 FS_LEGEND = _pt(9.0)
 FS_TITLE = _pt(8.0)     # per-panel titles, matching fig_ksweep.py's FS_GLOSS
@@ -195,6 +195,7 @@ def main():
     dense_ds = [d for d, _ in DATASETS if (d, "dense") in table]
     dense_max_d = max(dense_ds) if dense_ds else max(ds_all)
 
+    band_annots = []
     for ax, key, ylabel, drop_d2, panel_letter in (
         # The y-label is the bare symbol; the title above spells out what it means.
         # Writing the words on both would name the axis twice, and panel (c) already
@@ -230,16 +231,22 @@ def main():
         ax.set_ylabel(ylabel, fontsize=FS_LABEL)
         ax.set_yscale("log")
         ax.grid(True, which="both", alpha=0.25)
-        ax.axvspan(min(ds_all) - 0.3, dense_max_d + 0.3, color="gray",
-                   alpha=0.08, zorder=0)
+        _span = ax.axvspan(min(ds_all) - 0.3, dense_max_d + 0.3, color="gray",
+                           alpha=0.08, zorder=0)
         # Top of the axes, not the bottom. Panels (a) and (b) now report factors
         # greater than one, so the Dense series sits on the y=1 line at the very
         # bottom -- exactly where this annotation used to go, and it was struck
         # through by the markers. Panel (c) still plots absolute SW and keeps its
         # label low, where there is room.
-        ax.text((min(ds_all) + dense_max_d) / 2, 0.98, "Dense-grid feasible",
-                transform=ax.get_xaxis_transform(), va="top", ha="center",
-                fontsize=FS_ANNOT, color="dimgray")
+        # Two lines, not one: set on a single line this ran past both edges of
+        # the shaded band it labels, and in panels (b) and (c) the leading "D"
+        # was clipped by the y-axis. Wrapping keeps it inside the band.
+        _txt = ax.text((min(ds_all) + dense_max_d) / 2, 0.98,
+                       "Dense-Grid\nSimulable",
+                       transform=ax.get_xaxis_transform(), va="top",
+                       ha="center", multialignment="center", linespacing=1.15,
+                       fontsize=FS_ANNOT, color="dimgray")
+        band_annots.append((panel_letter, _span, _txt))
         ax.set_title(PANEL_TITLE[panel_letter], fontsize=FS_TITLE,
                      color="0.25", pad=10)
         ax.text(PANEL_LABEL_X, PANEL_LABEL_Y, f"({panel_letter.lower()})",
@@ -264,11 +271,14 @@ def main():
                     markerfacecolor=METHOD_COLORS[m], markeredgecolor="black",
                     markeredgewidth=0.7, alpha=0.9, zorder=3)
     ax_acc.axhline(0.1, color="dimgray", lw=1.2, ls="--", alpha=0.8, zorder=1)
-    ax_acc.axvspan(min(ds_all) - 0.3, dense_max_d + 0.3, color="gray",
-                   alpha=0.08, zorder=0)
-    ax_acc.text((min(ds_all) + dense_max_d) / 2, 0.98, "Dense-grid feasible",
-                transform=ax_acc.get_xaxis_transform(), va="top",
-                ha="center", fontsize=FS_ANNOT, color="dimgray")
+    _span_c = ax_acc.axvspan(min(ds_all) - 0.3, dense_max_d + 0.3, color="gray",
+                             alpha=0.08, zorder=0)
+    _txt_c = ax_acc.text((min(ds_all) + dense_max_d) / 2, 0.98,
+                         "Dense-Grid\nSimulable",
+                         transform=ax_acc.get_xaxis_transform(), va="top",
+                         ha="center", multialignment="center",
+                         linespacing=1.15, fontsize=FS_ANNOT, color="dimgray")
+    band_annots.append(("C", _span_c, _txt_c))
     ymax = max(sw_vals) if sw_vals else 0.15
     ax_acc.set_ylim(0, ymax * 1.35)
     ax_acc.set_xticks(list(ds_all))
@@ -289,6 +299,18 @@ def main():
                bbox_to_anchor=(0.5, 1.0),
                ncol=len(labels), fontsize=FS_LEGEND, frameon=False,
                handlelength=1.2, columnspacing=2.0)
+
+    # The band label must stay inside the band it names. Set on one line it ran
+    # past both edges and the leading "D" was clipped by the y-axis in (b),(c),
+    # which is invisible in a downscaled proof -- so measure the artists rather
+    # than trust the eye. Margins are in points at the figure's own scale.
+    fig.canvas.draw()
+    for _lab, _sp, _tx in band_annots:
+        _tb, _sb = _tx.get_window_extent(), _sp.get_window_extent()
+        _ok = _tb.x0 >= _sb.x0 and _tb.x1 <= _sb.x1
+        print(f"[band] panel {_lab}: margins "
+              f"L={_tb.x0 - _sb.x0:+.0f} R={_sb.x1 - _tb.x1:+.0f} px  "
+              f"{'inside' if _ok else 'OVERFLOWS'}", flush=True)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
