@@ -1,0 +1,89 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "tnwf — Scalable quantum simulation of continuous-time generative models via tensor networks"
+abstract: >-
+  Reproduction code for "Scalable quantum simulation of continuous-time generative models
+  via tensor networks": compressing the position-diagonal
+  V-step of a wavefunction-flow evolution with tensor-network methods
+  (TCI + TDVP).
+type: software
+# Author order and affiliations mirror sn-article.tex, where every author is
+# listed at Sygaldry alone. Cochran and Veerapaneni previously carried a
+# University of Michigan affiliation here; it was removed to match authors.tex,
+# which records that removal as deliberate. Do not reinstate it without
+# checking there first.
+# TODO(author): an ORCID is still needed for Chad Rigetti
+# (`orcid: "https://orcid.org/0000-..."`, in both author blocks).
+authors:
+  - given-names: "Nathan X."
+    family-names: Kodama
+    email: nathan@sygaldry.com
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-6818-9669"
+  - given-names: "L. Andrew"
+    family-names: Wray
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0001-8977-0201"
+  - given-names: Sam
+    family-names: Cochran
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-5538-641X"
+  - given-names: Chad
+    family-names: Rigetti
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+  - given-names: Shravan
+    family-names: Veerapaneni
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-2294-7233"
+  - given-names: "Michael J."
+    family-names: Keiser
+    affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    orcid: "https://orcid.org/0000-0002-1240-2192"
+repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
+license: MIT
+version: 1.0.0
+date-released: "2026-08-21"
+# The hyperparameter-sweep data this code consumes is archived separately.
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21845216"
+    description: "tnwf-paper data archive (hyperparameter sweeps, checkpoints)"
+preferred-citation:
+  type: article
+  title: "Scalable quantum simulation of continuous-time generative models via tensor networks"
+  authors:
+    - given-names: "Nathan X."
+      family-names: Kodama
+      email: nathan@sygaldry.com
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-6818-9669"
+    - given-names: "L. Andrew"
+      family-names: Wray
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0001-8977-0201"
+    - given-names: Sam
+      family-names: Cochran
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-5538-641X"
+    - given-names: Chad
+      family-names: Rigetti
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+    - given-names: Shravan
+      family-names: Veerapaneni
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-2294-7233"
+    - given-names: "Michael J."
+      family-names: Keiser
+      affiliation: "Sygaldry Technologies, Inc., Ann Arbor, MI, USA"
+      orcid: "https://orcid.org/0000-0002-1240-2192"
+  # Cite the arXiv preprint. CFF 1.2.0 has no "preprint" type, so this is
+  # `article` with arXiv's DataCite DOI and no `journal` field -- the work is not
+  # in a journal, and naming one before acceptance would assert something untrue.
+  # `journal` is not required for type: article.
+  #
+  # TODO(author): on posting, fill both fields from the arXiv identifier --
+  # 2608.01234 gives doi 10.48550/arXiv.2608.01234 and the matching abs URL.
+  # doi: "10.48550/arXiv.XXXXXXXXX"
+  # url: "https://arxiv.org/abs/XXXXXXXXX"
+  year: 2026
+  license: CC-BY-4.0

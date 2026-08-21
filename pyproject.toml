@@ -1,0 +1,63 @@
+[project]
+name = "tnwf"
+version = "1.0.0"
+description = "Scalable simulation of wavefunction flows via tensor networks (npj QI reproduction)"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "torch>=2.2",
+    "matplotlib>=3.8",
+    "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+# CPU-only torch. The default resolution pulls the CUDA runtime on Linux -- 19
+# packages under the NVIDIA CUDA Toolkit EULA, the only proprietary licenses in
+# the tree. Reproducing the paper never touches them: the figure and table
+# generators load the trained MPS-V checkpoints from the data archive rather
+# than retraining, and no Makefile target runs scripts/mps_v/train.py. Pinning
+# the CPU index removes them from the lock, leaving a wholly permissive
+# dependency tree.
+#
+# Cost: retraining the velocity potential (scripts/mps_v/train.py, which selects
+# CUDA when available) is CPU-only against this lock.
+#
+# If you install torch from the default index to get GPU training, you are
+# resolving ~19 packages under the NVIDIA CUDA Toolkit EULA and NVIDIA Software
+# License Agreement. Those are proprietary terms between you and NVIDIA; this
+# release neither redistributes them nor grants you any license to them, and
+# licenses/THIRD_PARTY_NOTICES.md does not cover them.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "needle: quick experiment (<30s)",
+    "medium: pipeline experiment (30s-5min)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
