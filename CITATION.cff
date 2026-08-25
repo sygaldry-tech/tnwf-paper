@@ -12,8 +12,6 @@ type: software
 # University of Michigan affiliation here; it was removed to match authors.tex,
 # which records that removal as deliberate. Do not reinstate it without
 # checking there first.
-# TODO(author): an ORCID is still needed for Chad Rigetti
-# (`orcid: "https://orcid.org/0000-..."`, in both author blocks).
 authors:
   - given-names: "Nathan X."
     family-names: Kodama

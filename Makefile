@@ -5,7 +5,7 @@
         fig-rare-event table1 table2 fig-scaling-bounds
 
 help:
-	@echo "tnwf — npj-QI reproduction Makefile"
+	@echo "tnwf — paper reproduction Makefile"
 	@echo ""
 	@echo "  make sync          uv sync --extra dev"
 	@echo "  make test-needle   pytest -m needle (<30s)"

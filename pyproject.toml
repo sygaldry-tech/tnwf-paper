@@ -1,7 +1,7 @@
 [project]
 name = "tnwf"
 version = "1.0.0"
-description = "Scalable simulation of wavefunction flows via tensor networks (npj QI reproduction)"
+description = "Scalable quantum simulation of continuous-time generative models via tensor networks (arXiv:2608.21700 reproduction code)"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
