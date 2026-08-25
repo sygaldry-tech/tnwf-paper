@@ -48,6 +48,9 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.21845216"
     description: "tnwf-paper data archive (hyperparameter sweeps, checkpoints)"
+  - type: other
+    value: "arXiv:2608.21700"
+    description: "arXiv preprint of the accompanying paper"
 preferred-citation:
   type: article
   title: "Scalable quantum simulation of continuous-time generative models via tensor networks"
@@ -80,10 +83,9 @@ preferred-citation:
   # `article` with arXiv's DataCite DOI and no `journal` field -- the work is not
   # in a journal, and naming one before acceptance would assert something untrue.
   # `journal` is not required for type: article.
-  #
-  # TODO(author): on posting, fill both fields from the arXiv identifier --
-  # 2608.01234 gives doi 10.48550/arXiv.2608.01234 and the matching abs URL.
-  # doi: "10.48550/arXiv.XXXXXXXXX"
-  # url: "https://arxiv.org/abs/XXXXXXXXX"
+  doi: "10.48550/arXiv.2608.21700"
+  url: "https://arxiv.org/abs/2608.21700"
   year: 2026
+  month: 8
+  notes: "arXiv:2608.21700 [quant-ph], submitted 2026-08-22."
   license: CC-BY-4.0

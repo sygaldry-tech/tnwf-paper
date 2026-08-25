@@ -2,7 +2,7 @@
 
 Reproduction code for the paper of the same name.
 
-> 📄 Paper: a preprint link will be added once posted.
+> 📄 Paper: [arXiv:2608.21700](https://arxiv.org/abs/2608.21700)
 > 🔖 To cite, see [Paper citation](#paper-citation).
 
 ![Wavefunction evolution on the Swiss roll target](assets/fig2_dense.png)
@@ -186,11 +186,27 @@ code; `licenses/` holds license texts only.
 
 ## Paper citation
 
-Please cite the work by title and authors:
+Please cite the arXiv preprint:
 
 > Nathan X. Kodama, L. Andrew Wray, Sam Cochran, Chad Rigetti, Shravan
 > Veerapaneni and Michael J. Keiser, *Scalable quantum simulation of
-> continuous-time generative models via tensor networks* (2026).
+> continuous-time generative models via tensor networks*, arXiv:2608.21700
+> (2026). <https://arxiv.org/abs/2608.21700>
+
+```bibtex
+@misc{kodama2026tnwf,
+  title         = {Scalable quantum simulation of continuous-time generative
+                   models via tensor networks},
+  author        = {Kodama, Nathan X. and Wray, L. Andrew and Cochran, Sam and
+                   Rigetti, Chad and Veerapaneni, Shravan and Keiser, Michael J.},
+  year          = {2026},
+  eprint        = {2608.21700},
+  archivePrefix = {arXiv},
+  primaryClass  = {quant-ph},
+  doi           = {10.48550/arXiv.2608.21700},
+  url           = {https://arxiv.org/abs/2608.21700}
+}
+```
 
 [`CITATION.cff`](CITATION.cff) carries the same details in machine-readable
 form, which is what GitHub's **Cite this repository** button reads.
