@@ -41,6 +41,28 @@ from _hp_utils import (
     memory_fraction,
 )
 
+# Font sizes are quoted at the size they RENDER in the paper, not at the size
+# matplotlib is handed. This figure is drawn 16 in wide and placed at
+# 0.95\textwidth of IOP's 153 mm text block, i.e. 5.73 in, so everything is
+# scaled down by a factor of nearly three on the page. Raw sizes put the axis
+# labels at about 5 pt against IOP's 8-to-12 pt guidance for figure text.
+# Keep _FIG_W_IN in step with the figsize below and _RENDERED_W_IN with the
+# includegraphics width in appendices.tex; if either moves, every font moves.
+_FIG_W_IN = 17.0
+_RENDERED_W_IN = 5.73
+
+
+def _pt(rendered: float) -> float:
+    """The matplotlib fontsize that renders at `rendered` points in the paper."""
+    return round(rendered * _FIG_W_IN / _RENDERED_W_IN, 1)
+
+
+FS_LABEL = _pt(8.0)     # axis labels, at IOP's floor for figure text
+FS_TICK = _pt(8.0)      # tick labels; previously the rcParams default
+FS_ANNOT = _pt(8.0)     # in-axes reference annotations
+FS_TITLE = _pt(8.5)     # per-panel titles, which carry the panel letter
+FS_LEGEND = _pt(8.0)
+
 DATASETS = {
     3: "data/gmm_3d_hp_v2",
     4: "data/gmm_4d_hp",
@@ -97,14 +119,18 @@ def draw_pareto_panel(ax, d, results_dir, refs, xkind, *,
         xp, yp = pareto_min_min(xs[mask], ys[mask])
         ax.plot(xp, yp, "-", lw=2.0, color=METHOD_COLORS[method],
                 alpha=0.85, drawstyle="steps-post", zorder=3)
-    for name, val, ls in (("Dense-grid best", refs["dense"], "--"),
-                          ("JAM best",   refs["jam"],   ":")):
+    # The two references nearly coincide at d=5, so their labels sit at
+    # opposite ends of the axes. Both stay above their own line: dropping one
+    # below puts it into the tick row wherever the line sits low.
+    for name, val, ls, xpos, halign in (
+            ("Dense-grid", refs["dense"], "--", 0.01, "left"),
+            ("JAM", refs["jam"], ":", 0.99, "right")):
         if val == val:
             ax.axhline(val, color="dimgray", lw=1, ls=ls, alpha=0.7,
                        zorder=1)
-            ax.text(0.99, val * 1.04, name, fontsize=12,
+            ax.text(xpos, val * 1.04, name, fontsize=FS_ANNOT,
                     color="dimgray",
-                    transform=ax.get_yaxis_transform(), ha="right")
+                    transform=ax.get_yaxis_transform(), ha=halign)
     if xkind == "mem":
         ax.axvline(1.0, color="dimgray", lw=1, ls="--", alpha=0.5,
                    zorder=1)
@@ -114,17 +140,19 @@ def draw_pareto_panel(ax, d, results_dir, refs, xkind, *,
         # Same quantity and same symbol as Figure 6's accuracy panel: the
         # endpoint sliced Wasserstein. "SW (final)" said it in words while
         # Figure 6 said it in math.
-        ax.set_ylabel("$\\mathrm{SW}(\\Psi_T)$", fontsize=14)
+        ax.set_ylabel("$\\mathrm{SW}(\\Psi_T)$", fontsize=FS_LABEL)
     ax.grid(True, which="both", alpha=0.25)
     if xkind == "mem":
-        ax.set_xlabel(f"MPS / Dense-grid memory ratio  ($d={d}$)",
-                      fontsize=14)
-        title_kind = "Memory Pareto"
+        ax.set_xlabel("MPS / Dense-grid memory",
+                      fontsize=FS_LABEL)
+        title_kind = "Memory"
     else:
-        ax.set_xlabel(f"Wall-clock time per run (s)  ($d={d}$)", fontsize=14)
-        title_kind = "Wall-Clock Pareto"
-    ax.set_title(rf"{panel_letter}  {title_kind}  ($d={d}$)",
-                 fontsize=15, fontweight="bold", loc="left")
+        ax.set_xlabel("Wall-clock time per run (s)", fontsize=FS_LABEL)
+        title_kind = "Wall-clock"
+    ax.tick_params(axis="both", which="major", labelsize=FS_TICK)
+    ax.tick_params(axis="both", which="minor", labelsize=FS_TICK)
+    ax.set_title(rf"{panel_letter}  {title_kind},  $d={d}$",
+                 fontsize=FS_TITLE, fontweight="bold", loc="left")
 
 
 def main():
@@ -141,9 +169,11 @@ def main():
                               constrained_layout=True)
     fig.set_constrained_layout_pads(w_pad=0.22, h_pad=0.30)
 
+    # Lower case, matching the rest of the paper and IOP's requirement that
+    # figure parts carry "a lower-case letter in parentheses".
     panel_letters = [
-        ["(A)", "(B)", "(C)"],
-        ["(D)", "(E)", "(F)"],
+        ["(a)", "(b)", "(c)"],
+        ["(d)", "(e)", "(f)"],
     ]
     row_kinds = ["mem", "time"]
 
@@ -162,7 +192,7 @@ def main():
     handles, labels = axes[0, 0].get_legend_handles_labels()
     leg_top = fig.legend(handles, labels, loc="lower center",
                bbox_to_anchor=(0.5, 1.0),
-               ncol=len(labels), fontsize=18, frameon=False,
+               ncol=len(labels), fontsize=FS_LEGEND, frameon=False,
                handlelength=1.2, columnspacing=1.8)
     for h in leg_top.legend_handles:
         if hasattr(h, "set_sizes"):
