@@ -9,16 +9,13 @@ Two error measures, defined in the figure caption:
   eps_grid = ||(1-P_N) psi_T|| / ||psi_T||   relative L2 truncation of the target
   eps_time = ||psi_K - psi_inf||             phase-aligned distance to the K->inf flow
 
-NOTE ON SCOPE. This is the *plotting* half of the analytic scaling study. It reads
-a precomputed CSV cache (`data/scaling_theory/panel{A_state,B_repr,D_state}.csv`)
-that ships with the data archive. The *compute* half -- which integrates the dense
-flow at high K to produce those CSVs -- depends on internal solver code that is not
-part of this release, so the cache is shipped rather than regenerated. Everything
-here is pure csv/numpy/matplotlib, so the figure is fully reproducible from the
-cache; the numbers in it are not re-derived.
+This plotting script reads `data/scaling_theory/panel{A_state,B_repr,D_state}.csv`.
+Regenerate those files with `scripts/compute_scaling_theory.py` or use the CSVs in
+the data archive.
 
 Usage:
     make fig-scaling-bounds
+    make compute-scaling-theory
     uv run python scripts/make_fig_scaling_bounds.py [--cache DIR] [--out PATH]
 """
 from __future__ import annotations

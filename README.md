@@ -116,7 +116,7 @@ That creates:
 
 ```
 data/
-├── gmm_2d_hp/  gmm_3d_hp_v2/  gmm_4d_hp/ … gmm_8d_hp/   sweeps  → Fig 5, 6, S1, Table 1
+├── gmm_2d_hp/  gmm_3d_hp_v2/  gmm_4d_hp/ … gmm_8d_hp/   sweeps  → Fig 5, 6, B1, Table 1
 ├── scaling_theory/                                      CSVs    → Fig 4
 ├── timing_scaling/  mps_v_checkpoints/                          → Table 2
 └── {swiss_roll_2d,gmm_2d,gmm_3d}/jam/                   JAM ckpts → Fig 2
@@ -146,7 +146,7 @@ unambiguous.
 | Fig 1 | `fig1_overview_tikz.pdf` | — | TikZ, built in the LaTeX source |
 | Fig 2 | `fig2_dense.pdf` | `make_fig2_dense_evolution.py` | ✅ needs `jam/seed0.pt` |
 | Fig 3 | `fig_gmm_ode.pdf` | `make_fig_gmm_ode.py` | ✅ self-contained |
-| Fig 4 | `fig_scaling_bounds.pdf` | `make_fig_scaling_bounds.py` | ✅ needs `scaling_theory` CSVs |
+| Fig 4 | `fig_scaling_bounds.pdf` | `compute_scaling_theory.py`, `make_fig_scaling_bounds.py` | ✅ compute CSVs, then plot |
 | Fig 5 | `fig_tsne_grid.pdf` | `make_fig_tsne_grid.py` | ✅ needs sweeps |
 | Table 1 | `table1_sw.tex` | `make_table1_sw.py` | ✅ needs sweeps |
 | Fig 6 | `fig_cost_scaling.pdf` | `make_fig_cost_scaling.py` | ✅ needs sweeps |
@@ -154,17 +154,74 @@ unambiguous.
 | Table 2 | `table_scaling.tex` | `make_table2_scaling.py` | ✅ needs `timing_scaling` + MPS-V checkpoints |
 | Fig 8 | `fig_rare_event_advantage.pdf` | `make_fig_rare_event.py` | ✅ needs MPS-V checkpoints |
 
-**Fig 2–6, Fig 8 and Tables 1–2 reproduce exactly**. Fig 1 is built by LaTeX. Fig 7 is the only main-text float not
-released; it comes from a cloud (Modal) timing driver.
+**Fig 2–6, Fig 8 and Tables 1–2 reproduce exactly**. Fig 1 is built by LaTeX.
+Fig 7 comes from a cloud timing driver whose code is not released.
 
-From the supplement, only **Fig S1** is reproducible here — `make supp`, and it
-needs the same sweeps as Fig 5. The remaining supplement floats depend on cloud
-drivers or on intermediate outputs that were not preserved.
+From the appendices, **Fig B1** is reproducible here with `make supp`; it needs
+the same sweeps as Fig 5. The generation code for Fig 7, Table B1, and
+Figs B2–B5 is available on request through a repository issue.
 
-Fig 4 ships only the *plotting* half of the analytic scaling study: the
-`data/scaling_theory/` cache is in the archive above, but the compute pass that
-produces it depends on unreleased solver code. The figure reproduces exactly
-from that cache; its numbers are not re-derived.
+Regenerate the Fig 4 CSVs with `make compute-scaling-theory`, then plot with
+`make fig-scaling-bounds`. The `data/scaling_theory/` cache is also in the data
+archive.
+
+### Appendix B.6: correlated mixtures
+
+- `scripts/correlated_bond_scaling.py` prints Table B2 (bond dimension of a correlated
+  Gaussian component in the natural, window-shuffled and random orders) and the bond
+  dimension along the flow path. NumPy only; runs in seconds.
+- `scripts/correlated_flow.py --d <d>` runs the TCI+1TDVP flow on the correlated mixture
+  and prints the correlation recovery. `--angles balanced` and `--substeps 4` rerun
+  the step-coefficient comparison; with balanced coefficients at d = 32 this script
+  gives R = 0.77 where the paper reports 0.72. Minutes at d = 8, hours at d ≥ 64.
+
+The runs behind Tables B3 and B4 use a phase-operator step and 1TDVP+SE, which are not
+part of this release; they are available on request through a repository issue.
+
+### Rerunning the unreleased sweeps
+
+Fig 7, Table B1 and Figs B2–B5 are parameter sweeps run on cloud drivers. Each
+cell of a sweep is one call to `tnwf.pipelines.run_evolution.run`; the drivers
+loop over cells and collect the returned metrics. To rerun the cells that use a
+released V-step:
+
+1. Train the potential once, as a neural network (`python -m tnwf.jam.train`)
+   or as an MPS (`python -m tnwf.mps_v.train`).
+2. For each cell call `run(method, dataset, N=..., K=...,
+   method_kwargs={"D_max": ...})`, or for the trained MPS potential
+   `scripts/mps_v/generate.py --K <K> --D_max <D>`. The swept values are given
+   in the paper (Fig 7 caption, Table 3, and the appendix sections for each
+   float).
+3. Score the returned samples with `tnwf.metrics`.
+
+These floats also show the one-site TDVP with subspace expansion (1TDVP+SE),
+which is not part of this release. That integrator and the drivers are
+available on request through a repository issue.
+
+### Not in this release
+
+- **Sweep post-processing.** The plotters for Figs 5 and 6, Table 1 and Fig B1 read
+  `sw_endpoint`, `mmd_endpoint` and `sw_endpoint_mc_std`, which a post-processing
+  step added to the archived sweep files. `run()` does not write these fields, so
+  these floats reproduce from the data archive and not from fresh `run()` output.
+- **Bond-dimension ramp schedules.** Table 2 and the Fig 8 states use a ramped
+  bond cap on the wavefunction (paper, Methods). The per-d schedules are not in
+  the code or the archive.
+- **MPS-V training regularizer.** The archived MPS-V checkpoints record
+  `unitarity_weight = 0.1`; that term is not in `tnwf.mps_v.train`.
+
+These are available on request through a repository issue.
+
+The archived MPS-V checkpoints (Table 2) were trained with settings that differ
+from the defaults of `python -m tnwf.mps_v.train`:
+
+```
+python -m tnwf.mps_v.train --dataset gmm_8d --d <d> --N 32 --D 8 --N_t 10 \
+    --n_samples 200000 --lr_schedule cosine --sgdr_t0 10000 \
+    --batch_size 2048 --n_iter 25000 --patience 20 --out <path>.pt
+```
+
+At d = 8 the archived run used `--batch_size 8192 --n_iter 80000 --patience 40`.
 
 ## License & dependencies
 

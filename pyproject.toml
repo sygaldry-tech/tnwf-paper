@@ -1,6 +1,6 @@
 [project]
 name = "tnwf"
-version = "1.0.0"
+version = "1.1.0"
 description = "Scalable quantum simulation of continuous-time generative models via tensor networks (arXiv:2608.21700 reproduction code)"
 requires-python = ">=3.11"
 license = "MIT"

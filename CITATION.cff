@@ -39,8 +39,8 @@ authors:
     orcid: "https://orcid.org/0000-0002-1240-2192"
 repository-code: "https://github.com/sygaldry-tech/tnwf-paper"
 license: MIT
-version: 1.0.0
-date-released: "2026-08-21"
+version: 1.1.0
+date-released: "2026-11-24"
 # The hyperparameter-sweep data this code consumes is archived separately.
 identifiers:
   - type: doi

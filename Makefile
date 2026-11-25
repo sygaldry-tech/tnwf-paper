@@ -2,7 +2,8 @@
         jam-all jam-swiss jam-gmm2 jam-gmm3 \
         run-swiss run-gmm2 run-gmm3 \
         fig2 fig-gmm-ode fig-tsne fig-cost-scaling supp notebook clean-results \
-        fig-rare-event table1 table2 fig-scaling-bounds
+        fig-rare-event table1 table2 fig-scaling-bounds compute-scaling-theory \
+        correlated-bond-scaling
 
 help:
 	@echo "tnwf — paper reproduction Makefile"
@@ -24,11 +25,13 @@ help:
 	@echo "  make fig2          render paper Fig 2 (dense evolution)"
 	@echo "  make fig-tsne      render the t-SNE grid figure     — needs gmm_*_hp sweeps"
 	@echo "  make fig-cost-scaling  render the cost-scaling figure — needs gmm_*_hp sweeps"
-	@echo "  make supp          render paper Fig S1              — needs gmm_*_hp sweeps"
+	@echo "  make supp          render paper Fig B1              — needs gmm_*_hp sweeps"
 	@echo ""
 	@echo "  make table1        render paper Table 1 (best-cell SW) — needs gmm_*_hp sweeps"
 	@echo "  make table2        render paper Table 2 (MPS-V scaling) — needs timing_scaling + checkpoints"
 	@echo "  make fig-scaling-bounds  render paper Fig 4 (error scaling) — needs scaling_theory CSVs"
+	@echo "  make compute-scaling-theory  regenerate the three Fig 4 CSVs"
+	@echo "  make correlated-bond-scaling  print Appendix B.6 Table B2"
 	@echo "  make fig-rare-event  render the rare-event advantage figure (paper Fig 8) — needs mps_v_checkpoints"
 	@echo ""
 	@echo "  make notebook      launch the examples/tnwf_demo.ipynb demo notebook"
@@ -117,10 +120,16 @@ table1:
 table2:
 	uv run python scripts/make_table2_scaling.py
 
-# Paper Fig 4 (error scaling vs the bounds). Plots from the shipped
-# data/scaling_theory/ CSV cache; the compute half is not part of this release.
+# Paper Fig 4 (error scaling vs the bounds).
+compute-scaling-theory:
+	uv run python scripts/compute_scaling_theory.py
+
 fig-scaling-bounds:
 	uv run python scripts/make_fig_scaling_bounds.py
+
+# Appendix B.6, Table B2 (bond dimension of correlated Gaussian components).
+correlated-bond-scaling:
+	uv run python scripts/correlated_bond_scaling.py
 
 # Rare-event advantage (paper Fig 8). The wavefunction-flow pipeline reads the Table-2 K=160
 # MPS cores that ship in examples/rare_event/, but the flow-ODE pipeline integrates
